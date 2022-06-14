@@ -1,0 +1,17 @@
+{
+    "name": "bing-api",
+    "title": "获取bing今日美图",
+    "version": "0.1.0",
+    "description": "获取bing今日美图",
+    "author": "graywolf",
+    "namespace": "bingapi",
+    "require": {
+        "blessing-skin-server": "^5|^6"
+    },
+    "enchants": {
+        "icon": {
+            "fa": "id-card-alt",
+            "bg": "purple"
+        }
+    }
+}
