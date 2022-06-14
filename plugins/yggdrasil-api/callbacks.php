@@ -18,9 +18,10 @@ return [
             Schema::create('ygg_log', function ($table) {
                 $table->increments('id');
                 $table->string('action');
-                $table->integer('user_id');
-                $table->integer('player_id');
+                $table->string('email');
+                $table->string('name');
                 $table->string('parameters')->default('');
+                $table->string('user_agent');
                 $table->string('ip')->default('');
                 $table->dateTime('time');
             });

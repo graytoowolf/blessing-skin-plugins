@@ -2,8 +2,8 @@ if (!(Test-Path updated.json)) {
     exit
 }
 
-git config --global user.name 'Pig Fang'
-git config --global user.email 'g-plane@hotmail.com'
+git config --global user.name 'graytoowolf'
+git config --global user.email 'graywolf186@gmail.com'
 
 $token = $env:GH_TOKEN
 

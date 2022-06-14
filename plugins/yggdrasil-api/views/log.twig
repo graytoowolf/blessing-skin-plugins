@@ -10,10 +10,11 @@
           <tr>
             <th>#</th>
             <th>{{ trans('Yggdrasil::log.header.action') }}</th>
-            <th>UID</th>
-            <th>PID</th>
+            <th>email</th>
+            <th>用户名</th>
             <th>{{ trans('Yggdrasil::log.header.params') }}</th>
             <th>IP</th>
+            <th>用户代理</th>
             <th>{{ trans('Yggdrasil::log.header.time') }}</th>
           </tr>
         </thead>
@@ -22,8 +23,8 @@
             <tr>
               <td>{{ log.id }}</td>
               <td>{{ actions[log.action] }}</td>
-              <td>{{ log.user_id }}</td>
-              <td>{{ log.player_id }}</td>
+              <td>{{ log.email }}</td>
+              <td>{{ log.name }}</td>
               <td>
                 <a
                   href="#"
@@ -33,6 +34,7 @@
                 </a>
               </td>
               <td>{{ log.ip }}</td>
+              <td>{{ log.user_agent }}</td>
               <td>{{ log.time }}</td>
             </tr>
           {% else %}

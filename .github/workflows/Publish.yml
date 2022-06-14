@@ -17,7 +17,7 @@ jobs:
     - name: Checkout distribution repository
       uses: actions/checkout@v2
       with:
-        repository: bs-community/plugins-dist
+        repository: graytoowolf/plugins-dist
         path: '.dist'
         token: ${{ secrets.GH_TOKEN }}
     - name: Download nano
@@ -35,5 +35,3 @@ jobs:
       shell: pwsh
       env:
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}

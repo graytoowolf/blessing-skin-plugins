@@ -9,7 +9,7 @@ if (!function_exists('ygg_generate_rsa_keys')) {
         $config = array_merge($config, [
             'private_key_bits' => 4096,
             'private_key_type' => OPENSSL_KEYTYPE_RSA,
-            'config' => plugin('yggdrasil-api')->getPath().'/assets/openssl.cnf',
+            'config' => plugin('yggdrasil-api')->getPath() . '/assets/openssl.cnf',
         ]);
 
         $res = openssl_pkey_new($config);
@@ -47,10 +47,11 @@ if (!function_exists('ygg_log')) {
         if (env('YGG_VERBOSE_LOG')) {
             $data = array_merge([
                 'action' => 'undefined',
-                'user_id' => 0,
-                'player_id' => 0,
+                'email' => 0,
+                'name' => 0,
                 'parameters' => '[]',
                 'ip' => (new Whip())->getValidIpAddress(),
+                'user_agent' => request()->userAgent(),
                 'time' => Carbon::now(),
             ], $params);
 

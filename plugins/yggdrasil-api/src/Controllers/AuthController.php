@@ -80,7 +80,7 @@ class AuthController extends Controller
 
         ygg_log([
             'action' => 'authenticate',
-            'user_id' => $user->uid,
+            'email' => $user->email,
             'parameters' => json_encode($request->except('username', 'password')),
         ]);
 
@@ -195,7 +195,7 @@ class AuthController extends Controller
 
         ygg_log([
             'action' => 'refresh',
-            'user_id' => $user->uid,
+            'email' => $user->email,
             'parameters' => json_encode($request->except('accessToken')),
         ]);
 
@@ -231,7 +231,7 @@ class AuthController extends Controller
 
             ygg_log([
                 'action' => 'validate',
-                'user_id' => $user->uid,
+                'email' => $user->email,
                 'parameters' => json_encode($request->except('accessToken')),
             ]);
 
@@ -250,7 +250,7 @@ class AuthController extends Controller
         // 吊销所有令牌
         $tokens = Arr::wrap(Cache::get("yggdrasil-id-$identification"));
         array_walk($tokens, function (Token $token) {
-            Cache::forget('yggdrasil-token-'.$token->accessToken);
+            Cache::forget('yggdrasil-token-' . $token->accessToken);
         });
         Cache::forget("yggdrasil-id-$identification");
 
@@ -258,7 +258,7 @@ class AuthController extends Controller
 
         ygg_log([
             'action' => 'signout',
-            'user_id' => $user->uid,
+            'email' => $user->email,
         ]);
 
         return response()->noContent();
@@ -285,7 +285,7 @@ class AuthController extends Controller
 
             ygg_log([
                 'action' => 'invalidate',
-                'user_id' => User::where('email', $token->owner)->first()->uid,
+                'email' => User::where('email', $token->owner)->first()->uid,
                 'parameters' => json_encode($request->json()->all()),
             ]);
 
@@ -365,7 +365,7 @@ class AuthController extends Controller
         if (count($tokens) >= $limit) {
             $expired = array_shift($tokens);
             if ($expired) {
-                Cache::forget('yggdrasil-token-'.$expired->accessToken);
+                Cache::forget('yggdrasil-token-' . $expired->accessToken);
             }
         }
         $tokens[] = $token;
