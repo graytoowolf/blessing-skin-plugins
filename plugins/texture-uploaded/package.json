@@ -1,0 +1,17 @@
+{
+  "name": "texture-uploaded",
+  "version": "1.0.0",
+  "title": "皮肤上传自动提交百度平台",
+  "description": "皮肤上传自动提交百度平台",
+  "author": "graywolf",
+  "namespace": "textureuploaded",
+  "require": {
+    "blessing-skin-server": "^6"
+  },
+  "enchants": {
+    "icon": {
+      "fa": "user-lock",
+      "bg": "yellow"
+    }
+  }
+}
