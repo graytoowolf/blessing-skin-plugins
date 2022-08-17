@@ -1,7 +1,7 @@
 {
     "name": "bing-api",
     "title": "获取bing今日美图",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "获取bing今日美图",
     "author": "graywolf",
     "namespace": "bingapi",
