@@ -35,3 +35,9 @@ jobs:
       shell: pwsh
       env:
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
+    - name: Upload qiniu
+      run: |
+        wget https://devtools.qiniu.com/qshell-v2.9.0-linux-386.tar.gz?ref=developer.qiniu.com -O qshell.tar.gz
+        tar -zxvf qshell.tar.gz
+        ./qshell account ${{ secrets.QINIU_AccessKey }} ${{ secrets.QINIU_SecretKey }} bs
+        ./qshell qupload2 --src-dir=./dist --bucket=${{ secrets.QINIU_Name }} --up-host=http://upload-z2.qiniu.com --overwrite=true --rescan-local=true --check-hash=true
