@@ -44,7 +44,7 @@ return function (Filter $filter, Dispatcher $events) {
 
     // 仅当 UUID 生成算法为「随机生成」时保证修改角色名后 UUID 一致
     // 因为另一种 UUID 生成算法要最大限度兼容盗版模式，所以不做修改
-    if (option('ygg_uuid_algorithm') == 'v4') {
+    if (option('ygg_uuid_algorithm') == 'v3') {
         App\Models\Player::updating($callback);
     }
 
