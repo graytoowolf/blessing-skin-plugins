@@ -42,4 +42,4 @@ jobs:
         wget https://devtools.qiniu.com/qshell-v2.9.0-linux-386.tar.gz?ref=developer.qiniu.com -O qshell.tar.gz
         tar -zxvf qshell.tar.gz
         ./qshell account ${{ secrets.QINIU_AccessKey }} ${{ secrets.QINIU_SecretKey }} bs
-        ./qshell qupload2 --src-dir=./qiniu --bucket=${{ secrets.QINIU_Name }} --overwrite=true --rescan-local=true --check-hash=true --skip-fixed-strings=.git
+        ./qshell qupload2 --src-dir=./qiniu --bucket=${{ secrets.QINIU_Name }} --overwrite=true --check-exists=true --check-hash=true --skip-fixed-strings=.git

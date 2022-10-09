@@ -19,7 +19,7 @@ return function (Dispatcher $events, Filter $filter) {
     $filter->add('oauth_providers', function (Collection $providers) {
         $providers->put('qq', [
             'icon' => 'qq',
-            'displayName' => 'qq',
+            'displayName' => '用QQ账号登录',
         ]);
 
         return $providers;
