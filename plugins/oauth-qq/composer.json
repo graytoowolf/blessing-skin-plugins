@@ -1,0 +1,16 @@
+{
+  "name": "gplane/oauth-qq",
+  "description": "",
+  "type": "project",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Pig Fang",
+      "email": "g-plane@hotmail.com"
+    }
+  ],
+  "require": {
+    "socialiteproviders/qq": "^4.2",
+    "psr/log": "^1"
+  }
+}
