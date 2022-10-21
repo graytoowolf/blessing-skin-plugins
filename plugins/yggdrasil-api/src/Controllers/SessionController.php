@@ -147,7 +147,7 @@ class SessionController extends Controller
             return false;
         }
 
-        return DB::table('mojang_verifications')->where('email', $player->uid)->exists();
+        return DB::table('mojang_verifications')->where('user_id', $player->uid)->exists();
     }
 
     protected function validateMojang($accessToken)
