@@ -20,6 +20,10 @@ jobs:
         repository: graytoowolf/plugins-dist
         path: '.dist'
         token: ${{ secrets.GH_TOKEN }}
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v2.2.2
+      with:
+        version: 7.26.0
     - name: Download nano
       run: ./download-nano.ps1
       shell: pwsh
