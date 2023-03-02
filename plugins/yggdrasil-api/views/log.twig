@@ -34,7 +34,7 @@
                 </a>
               </td>
               <td>{{ log.ip }}</td>
-              <td>{{ log.user_agent }}</td>
+              <td>{{ log.user_agent[:16] ~ '...' }}</td>
               <td>{{ log.time }}</td>
             </tr>
           {% else %}
