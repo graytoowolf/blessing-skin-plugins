@@ -92,6 +92,10 @@ class AuthController extends Controller
         $clientToken = $request->input('clientToken');
         $accessToken = $request->input('accessToken');
 
+        if (empty($accessToken)) {
+            throw new ForbiddenOperationException(trans('Yggdrasil::exceptions.token.invalid'));
+        }
+
         Log::channel('ygg')->info("Try to refresh access token [$accessToken] with client token [$clientToken]");
 
         $token = Token::find($accessToken);
@@ -209,6 +213,10 @@ class AuthController extends Controller
         $clientToken = $request->input('clientToken');
         $accessToken = $request->input('accessToken');
 
+        if (empty($accessToken)) {
+            throw new ForbiddenOperationException(trans('Yggdrasil::exceptions.token.invalid'));
+        }
+
         Log::channel('ygg')->info('Check if an access token is valid', compact('clientToken', 'accessToken'));
 
         $token = Token::find($accessToken);
@@ -268,6 +276,10 @@ class AuthController extends Controller
     {
         $clientToken = $request->input('clientToken');
         $accessToken = $request->input('accessToken');
+
+        if (empty($accessToken)) {
+            throw new ForbiddenOperationException(trans('Yggdrasil::exceptions.token.invalid'));
+        }
 
         Log::channel('ygg')->info('Try to invalidate an access token', compact('clientToken', 'accessToken'));
 
