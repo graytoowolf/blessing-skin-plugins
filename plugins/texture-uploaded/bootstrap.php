@@ -1,18 +1,20 @@
 <?php
 
-use App\Models\Texture;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Contracts\Events\Dispatcher;
-use Illuminate\Support\Facades\Log;
 
 return function (Dispatcher $events) {
     $events->listen('texture.uploaded', function ($event) {
-        if($event->public){
-            $skinurl=url('/skinlib/show').'/'.$event->tid;
-            $url='http://data.zz.baidu.com/urls?site='.url('').'&token='.env('BAIDU_ZIYUAN_TOKEN');
-            $response = Http::withBody($skinurl ,'text/plain')->post($url);
-            log::info($response);
+        if ($event->public) {
+            $skinurl = url('/skinlib/show') . '/' . $event->tid;
+            //添加数据到sitemap.xml
+            $sitemapnema = public_path('sitemap.xml');
+            $xml = simplexml_load_file($sitemapnema);
+            $url = $xml->addChild('url');
+            $url->addChild('loc', $skinurl);
+            $url->addChild('lastmod', date('Y-m-d'));
+            $url->addChild('changefreq', 'daily');
+            $url->addChild('priority', '1.0');
+            $xml->asXML($sitemapnema);
         }
     });
-
 };

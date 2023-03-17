@@ -1,8 +1,8 @@
 {
   "name": "texture-uploaded",
-  "version": "1.0.0",
-  "title": "皮肤上传自动提交百度平台",
-  "description": "皮肤上传自动提交百度平台",
+  "version": "1.0.1",
+  "title": "自动生成sitemap",
+  "description": "上传皮肤自动生成sitemap.xml",
   "author": "graywolf",
   "namespace": "textureuploaded",
   "require": {

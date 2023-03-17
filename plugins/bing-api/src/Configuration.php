@@ -10,12 +10,13 @@ class Configuration
   public function api()
   {
     $response = Http::get("https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1"); //从bing获取数据
-    //$response 是否获取成功
-    if (!$response->ok()) {
+    $json = $response->json();
+    if (empty($json) || empty($json['images']) || empty($json['images'][0]['url'])) {
+      // 如果 JSON 数据为空或者不包含期望的数据结构，返回空字符串或者抛出异常
       $replaced = 'https://www.bing.com/th?id=OHR.EdaleValley_ZH-CN8464524952_1920x1080.jpg';
     } else {
-      $imgurl = 'https://www.bing.com' . $response->json()['images'][0]['url']; // 解析JSON文件
-      $replaced = Str::of($imgurl)->replace('&rf=LaDigue_1920x1080.jpg&pid=hp', ''); //替换多余字符
+      $imageUrl = 'https://www.bing.com' . $json['images'][0]['url'];
+      $replaced = Str::of($imageUrl)->replace('&rf=LaDigue_1920x1080.jpg&pid=hp', ''); //替换多余字符
     }
     return redirect()->away($replaced)->withHeaders([
       'cache-control' => 'public',
