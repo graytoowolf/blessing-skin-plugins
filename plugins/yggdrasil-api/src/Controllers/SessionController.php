@@ -135,10 +135,14 @@ class SessionController extends Controller
                 return response()->json()->setContent($response);
             }
         }
-        $response = Http::get('https://sessionserver.mojang.com/session/minecraft/hasJoined', ['serverId' => $serverId, 'username' => $name, 'ip' => $ip]);
+        $response = Http::get('https://sessionserver.mojang.com/session/minecraft/hasJoined', [
+            'serverId' => $serverId,
+            'username' => $name,
+            'ip' => $ip
+        ]);
         if ($response->status() == 200) {
             Log::channel('ygg')->info("Returning player [$name]'s profile", [$response]);
-            return $response;
+            return $response->json();
         }
 
         Log::channel('ygg')->info("Player [$name] was not in the server [$serverId]");
