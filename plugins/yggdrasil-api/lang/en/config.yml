@@ -34,6 +34,9 @@ common:
   ygg_enable_ali:
     title: API Location Indicator
     label: Enable API Location Indicator (ALI).
+  ygg_enable_mojang:
+    title: Compatible with genuine
+    label: Enable the Compatible Genuine Verification function
 
 keypair:
   title: Keypair

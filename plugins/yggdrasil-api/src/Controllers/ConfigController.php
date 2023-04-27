@@ -36,6 +36,8 @@ class ConfigController extends Controller
                 ->label(trans('Yggdrasil::config.common.ygg_show_config_section.label'));
             $form->checkbox('ygg_enable_ali', trans('Yggdrasil::config.common.ygg_enable_ali.title'))
                 ->label(trans('Yggdrasil::config.common.ygg_enable_ali.label'));
+            $form->checkbox('ygg_enable_mojang', trans('Yggdrasil::config.common.ygg_enable_mojang.title'))
+                ->label(trans('Yggdrasil::config.common.ygg_enable_mojang.label'));
         })->handle();
 
         $keypairForm = Option::form('keypair', trans('Yggdrasil::config.keypair.title'), function (OptionForm $form) {

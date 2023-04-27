@@ -34,6 +34,9 @@ common:
   ygg_enable_ali:
     title: API 地址指示
     label: 开启「API 地址指示 (ALI)」功能
+  ygg_enable_mojang:
+    title: 兼容正版
+    label: 开启「兼容正版验证」功能
 
 keypair:
   title: 密钥对配置

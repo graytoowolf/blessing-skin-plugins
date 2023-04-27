@@ -39,6 +39,7 @@ return [
             'ygg_show_config_section' => 'true',
             'ygg_show_activities_section' => 'true',
             'ygg_enable_ali' => 'true',
+            'ygg_enable_mojang' => 'true',
         ];
 
         foreach ($items as $key => $value) {
