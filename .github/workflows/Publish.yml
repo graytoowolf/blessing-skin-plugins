@@ -39,11 +39,20 @@ jobs:
       shell: pwsh
       env:
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
-    - name: Upload qiniu
+
+    # 设置 AWS 凭证
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v3
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
+        # 设置 AWS 凭证过期时间，默认为 1 小时
+        expires-in: 3600
+
+    # 将目录同步到 S3
+    - name: Sync to S3
       run: |
         mkdir -p qiniu/plugins
         cp -r .dist/. qiniu/plugins
-        wget https://devtools.qiniu.com/qshell-v2.9.0-linux-386.tar.gz?ref=developer.qiniu.com -O qshell.tar.gz
-        tar -zxvf qshell.tar.gz
-        ./qshell account ${{ secrets.QINIU_AccessKey }} ${{ secrets.QINIU_SecretKey }} bs
-        ./qshell qupload2 --src-dir=./qiniu --bucket=${{ secrets.QINIU_Name }} --overwrite=true --check-exists=true --check-hash=true --skip-fixed-strings=.git
+        aws s3 sync ./qiniu/plugins s3://${{ secrets.AWS_S3_Name }}/plugins --delete --exclude ".git/*"
