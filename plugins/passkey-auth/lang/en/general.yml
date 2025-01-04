@@ -1,0 +1,8 @@
+manage: Passkey Management
+add: Add Passkey
+name: Name
+created_at: Created At
+operations: Operations
+delete_confirm: Are you sure you want to delete this Passkey? This action cannot be undone.
+rename_title: Rename Passkey
+rename_text: Please enter a new name

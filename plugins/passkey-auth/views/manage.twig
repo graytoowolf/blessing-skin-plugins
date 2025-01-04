@@ -1,0 +1,45 @@
+{% extends 'user.base' %}
+
+{% block title %}{{ trans('PasskeyAuth::general.manage') }}{% endblock %}
+
+{% block content %}
+<div class="alert alert-info">
+    {{ trans('PasskeyAuth::general.notice') }}
+    <a href="{{ trans('PasskeyAuth::general.help_url') }}" target="_blank">{{ trans('PasskeyAuth::general.what_is_passkey') }}</a>
+</div>
+
+<button class="btn btn-primary mb-3" id="passkey-register">
+    <i class="fas fa-plus"></i> {{ trans('PasskeyAuth::general.add') }}
+</button>
+
+<div class="row mx-n2">
+    {% for passkey in passkeys %}
+    <div class="col-auto px-2 mb-3">
+        <div class="card border" style="width: 350px;">
+            <div class="card-body p-3">
+                <div class="row mb-2 border-bottom pb-2">
+                    <div class="col-4 font-weight-bold">{{ trans('PasskeyAuth::general.name') }}</div>
+                    <div class="col-8 text-right">{{ passkey.name }}</div>
+                </div>
+                <div class="row mb-3 border-bottom pb-2">
+                    <div class="col-4 font-weight-bold">{{ trans('PasskeyAuth::general.created_at') }}</div>
+                    <div class="col-8 text-right">{{ passkey.created_at }}</div>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <button class="btn btn-outline-secondary btn-sm passkey-rename" data-id="{{ passkey.id }}">
+                        {{ trans('PasskeyAuth::general.rename') }}
+                    </button>
+                    <button class="btn btn-danger btn-sm passkey-delete" data-id="{{ passkey.id }}">
+                        {{ trans('PasskeyAuth::general.delete') }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url('assets/passkey-auth/passkey-login.js') }}"></script>
+{% endblock %}

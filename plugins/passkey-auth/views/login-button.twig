@@ -1,0 +1,51 @@
+<button class="btn btn-block btn-default" id="passkey-login">
+    <i class="fas fa-key mr-2"></i> {{ trans('PasskeyAuth::general.login') }}
+</button>
+
+<script>
+    blessing.event.on('mounted', () => {
+        const passkeyLoginButton = document.getElementById('passkey-login');
+        if (passkeyLoginButton) {
+            passkeyLoginButton.addEventListener('click', async () => {
+                try {
+                    const credential = await navigator.credentials.get({
+                        publicKey: {
+                            challenge: new Uint8Array(32),
+                            rpId: window.location.hostname,
+                            userVerification: 'preferred',
+                            timeout: 60000
+                        }
+                    });
+
+                    const response = {
+                        id: credential.id,
+                        type: credential.type,
+                        rawId: Array.from(new Uint8Array(credential.rawId)),
+                        response: {
+                            authenticatorData: Array.from(new Uint8Array(credential.response.authenticatorData)),
+                            clientDataJSON: Array.from(new Uint8Array(credential.response.clientDataJSON)),
+                            signature: Array.from(new Uint8Array(credential.response.signature))
+                        }
+                    };
+
+                    const result = await blessing.fetch.post('/auth/login/passkey', {
+                        type: 'passkey',
+                        credentials: response
+                    });
+
+                    if (result.code === 0) {
+                        window.location.href = result.redirect;
+                    } else {
+                        blessing.notify.toast.error(result.message);
+                    }
+                } catch (error) {
+                    if (error instanceof DOMException && error.name === "NotAllowedError") {
+                        blessing.notify.toast.warning(trans('passkey-auth.verify_rejected'));
+                    } else {
+                        blessing.notify.toast.error(trans('passkey-auth.operation_failed', { msg: error.message }));
+                    }
+                }
+            });
+        }
+    });
+</script>
