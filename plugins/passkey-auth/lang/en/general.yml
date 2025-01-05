@@ -3,6 +3,16 @@ add: Add Passkey
 name: Name
 created_at: Created At
 operations: Operations
-delete_confirm: Are you sure you want to delete this Passkey? This action cannot be undone.
+delete: Delete
+rename: Rename
+delete_confirm: "Are you sure you want to delete this passkey? This action cannot be undone."
 rename_title: Rename Passkey
 rename_text: Please enter a new name
+notice: "Passkeys allow you to sign in without entering a password, supporting biometric authentication methods like Windows Hello and fingerprint recognition."
+what_is_passkey: What is a Passkey?
+help_url: "https://support.google.com/chrome/answer/13168025?hl=en"
+login: Sign in with Passkey
+passkey_not_found: Passkey not found
+verify_rejected: Verification rejected
+operation_failed: "Operation failed: :msg"
+badge: Passkey

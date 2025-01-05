@@ -2,18 +2,20 @@ verifying: 正在发起验证...
 set_name: 给你的通行密钥设置一个名字吧
 key_added: 通行密钥添加成功
 verify_rejected: 验证被拒绝
-operation_failed: 操作失败：:msg
+operation_failed: "操作失败：:msg"
+no_local_passkey: 未找到本地通行密钥，请先在用户中心添加通行密钥
+login_success: 登录成功
 delete_confirm_title: 确定删除通行密钥吗？
 delete_confirm_text: |
   此操作不可恢复！
-  删除该通行密钥后，你将无法再使用该通行密钥登录。
+  "删除该通行密钥后，你将无法再使用该通行密钥登录 :msg"
   我们不提供任何备份，也没有什么神奇的撤销按钮。
   我们警告过你了，确定要这样做吗？
   如果确定，请在下方输入该通行密钥的名称。
 delete_success: 删除成功
-delete_failed: 删除失败：:msg
+delete_failed: "删除失败：:msg"
 name_mismatch: 通行密钥名称输入错误
 rename_title: 通行密钥命名
 rename_text: 给你的通行密钥起个名字吧
 rename_success: 重命名成功
-rename_failed: 重命名失败：:msg
+rename_failed: "重命名失败：:msg"

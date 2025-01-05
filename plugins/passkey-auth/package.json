@@ -1,20 +1,18 @@
 {
-    "name": "passkey-auth",
-    "version": "1.0.0",
-    "title": "通行密钥",
-    "description": "通过 WebAuthn/Passkey 实现无密码登录和多设备认证管理",
-    "author": "graywolf",
-    "namespace": "PasskeyAuth",
-    "require": {
-        "blessing-skin-server": "^6"
-    },
-    "enchants": {
-        "icon": {
-            "fa": "key",
-            "bg": "primary"
-        },
-        "providers": [
-            "ServiceProvider"
-        ]
+  "name": "passkey-auth",
+  "version": "1.0.2",
+  "title": "通行密钥",
+  "description": "通过 WebAuthn/Passkey 实现无密码登录和多设备认证管理",
+  "author": "graywolf",
+  "namespace": "PasskeyAuth",
+  "require": {
+    "blessing-skin-server": "^5|^6",
+      "oauth": "^1.0.0"
+  },
+  "enchants": {
+    "icon": {
+      "fa": "key",
+      "bg": "primary"
     }
+  }
 }

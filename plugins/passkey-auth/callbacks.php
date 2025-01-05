@@ -22,7 +22,6 @@ return [
                     $table->unique('credential_id', 'uk_credential_id');
                 });
             }
-
             return true;
         } catch (Exception $e) {
             return false;

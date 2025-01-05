@@ -35,12 +35,14 @@ class PasskeyController extends Controller
                 ['type' => 'public-key', 'alg' => -7],
                 ['type' => 'public-key', 'alg' => -257]
             ],
-            'timeout' => 60000,
+            'timeout' => 300000,
             'attestation' => 'none',
             'authenticatorSelection' => [
-                'authenticatorAttachment' => 'platform',
-                'userVerification' => 'preferred'
-            ]
+                'residentKey' => 'required',
+                'requireResidentKey' => true,
+                'userVerification' => 'required'
+            ],
+            'excludeCredentials' => [],
         ]);
     }
 

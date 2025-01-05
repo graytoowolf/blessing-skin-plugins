@@ -1,0 +1,21 @@
+verifying: Verifying...
+set_name: Set a name for your passkey
+key_added: Passkey added successfully
+verify_rejected: Verification rejected
+operation_failed: "Operation failed: :msg"
+no_local_passkey: No local passkey found, please add one in your user center first
+login_success: Login successful
+delete_confirm_title: Delete Passkey?
+delete_confirm_text: |
+  This action cannot be undone!
+  "After deleting this passkey, you will no longer be able to use it to sign in :msg"
+  We do not provide any backups, and there is no magic undo button.
+  We have warned you, are you sure you want to do this?
+  If you are sure, please enter the name of this passkey below.
+delete_success: Deleted successfully
+delete_failed: "Failed to delete: :msg"
+name_mismatch: Incorrect passkey name
+rename_title: Name Your Passkey
+rename_text: Give your passkey a name
+rename_success: Renamed successfully
+rename_failed: "Failed to rename: :msg"

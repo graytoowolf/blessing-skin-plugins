@@ -2,6 +2,15 @@
 
 use Illuminate\Support\Facades\Route;
 
+// 登录路由 - 高优先级
+Route::prefix('auth/login')
+    ->middleware(['web', 'guest'])
+    ->group(function () {
+        Route::post('passkey', 'AuthController@verify')
+            ->name('passkey.auth.login');
+    });
+
+// 用户管理路由
 Route::prefix('user/passkey')
     ->middleware(['web', 'auth'])
     ->group(function () {
