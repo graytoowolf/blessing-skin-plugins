@@ -59,6 +59,7 @@ class PasskeyController extends Controller
         $passkey->user_id = Auth::id();
         $passkey->credential_id = $request->input('id');
         $passkey->public_key = $request->input('response.attestationObject');
+        $passkey->name = 'Passkey ' . date('Y-m-d H:i:s');
         $passkey->save();
 
         return response()->json(['data' => ['id' => $passkey->id]]);
