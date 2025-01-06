@@ -20,10 +20,15 @@ jobs:
         repository: graytoowolf/plugins-dist
         path: '.dist'
         token: ${{ secrets.GH_TOKEN }}
+    # 添加 Node.js 设置
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '16.x'
     - name: Setup pnpm
       uses: pnpm/action-setup@v2
       with:
-        version: 7.26.0
+        version: 8.12.1
     - name: Download nano
       run: ./download-nano.ps1
       shell: pwsh
