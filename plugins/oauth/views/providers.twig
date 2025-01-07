@@ -2,10 +2,19 @@
   <div class="my-3 text-center">
     <div class="mb-1">{{ trans('Blessing\\OAuthCore::providers.title') }}</div>
     {% for name, provider in providers %}
-      <a href="{{ url("/auth/login/#{name}") }}" class="btn btn-block bg-light border-secondary">
-        <i class="fab fa-{{ provider.icon }}"></i>&nbsp;
-        {{ provider.displayName }}
-      </a>
+      {% if provider.button|default(false) %}
+        <button id="{{ name }}-login"
+           class="btn btn-block {{ provider.class|default('bg-light border-secondary') }} mb-2">
+          <i class="{{ provider.brand|default(false) ? 'fab' : 'fas' }} fa-{{ provider.icon }}"></i>&nbsp;
+          {{ provider.displayName }}
+        </button>
+      {% else %}
+        <a href="{{ url("/auth/login/#{name}") }}"
+           class="btn btn-block {{ provider.class|default('bg-light border-secondary') }} mb-2">
+          <i class="{{ provider.brand|default(true) ? 'fab' : 'fas' }} fa-{{ provider.icon }}"></i>&nbsp;
+          {{ provider.displayName }}
+        </a>
+      {% endif %}
     {% endfor %}
   </div>
 {% endif %}

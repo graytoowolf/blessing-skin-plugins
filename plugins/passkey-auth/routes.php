@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('auth/login')
     ->middleware(['web', 'guest'])
     ->group(function () {
+        Route::get('passkey/challenge', 'AuthController@getLoginChallenge')
+            ->name('passkey.auth.challenge');
         Route::post('passkey', 'AuthController@verify')
             ->name('passkey.auth.login');
     });

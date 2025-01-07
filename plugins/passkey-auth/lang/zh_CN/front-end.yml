@@ -1,21 +1,35 @@
-verifying: 正在发起验证...
-set_name: 给你的通行密钥设置一个名字吧
-key_added: 通行密钥添加成功
-verify_rejected: 验证被拒绝
-operation_failed: "操作失败：:msg"
-no_local_passkey: 未找到本地通行密钥，请先在用户中心添加通行密钥
-login_success: 登录成功
-delete_confirm_title: 确定删除通行密钥吗？
+# 操作相关
+add: "添加通行密钥"
+login: "使用通行密钥登录"
+delete: "删除"
+rename: "重命名"
+
+# 状态和提示
+verifying: "正在发起验证..."
+not_supported: "您的设备或浏览器不支持通行密钥"
+login_success: "登录成功"
+key_added: "通行密钥已添加"
+name_mismatch: "名称不匹配"
+no_local_passkey: "未找到本地通行密钥，请先在用户中心添加通行密钥"
+
+# 错误提示
+verify_rejected: "验证被拒绝"
+operation_failed: "操作失败：':msg'"
+
+# 重命名相关
+rename_title: "重命名通行密钥"
+rename_text: "请输入新的名称"
+set_name: "请为通行密钥设置一个名称"
+rename_success: "重命名成功"
+rename_failed: "重命名失败：':msg'"
+
+# 删除相关
+delete_confirm_title: "删除通行密钥"
 delete_confirm_text: |
   此操作不可恢复！
-  "删除该通行密钥后，你将无法再使用该通行密钥登录 :msg"
+  删除该通行密钥后，你将无法再使用该通行密钥登录 ':msg'
   我们不提供任何备份，也没有什么神奇的撤销按钮。
   我们警告过你了，确定要这样做吗？
   如果确定，请在下方输入该通行密钥的名称。
-delete_success: 删除成功
-delete_failed: "删除失败：:msg"
-name_mismatch: 通行密钥名称输入错误
-rename_title: 通行密钥命名
-rename_text: 给你的通行密钥起个名字吧
-rename_success: 重命名成功
-rename_failed: "重命名失败：:msg"
+delete_success: "删除成功"
+delete_failed: "删除失败：':msg'"

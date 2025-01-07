@@ -1,18 +1,23 @@
-manage: Passkey Management
-add: Add Passkey
-name: Name
-created_at: Created At
-operations: Operations
-delete: Delete
-rename: Rename
-delete_confirm: "Are you sure you want to delete this passkey? This action cannot be undone."
-rename_title: Rename Passkey
-rename_text: Please enter a new name
-notice: "Passkeys allow you to sign in without entering a password, supporting biometric authentication methods like Windows Hello and fingerprint recognition."
-what_is_passkey: What is a Passkey?
+# General
+manage: "Passkey Management"
+badge: "Passkey"
+notice: "Use passkeys to sign in without passwords, supporting biometric authentication methods like Windows Hello and fingerprint recognition."
+what_is_passkey: "What is a Passkey?"
 help_url: "https://support.google.com/chrome/answer/13168025?hl=en"
-login: Sign in with Passkey
-passkey_not_found: Passkey not found
-verify_rejected: Verification rejected
-operation_failed: "Operation failed: :msg"
-badge: Passkey
+
+# Operations
+add: "Add Passkey"
+login: "Sign in with Passkey"
+delete: "Delete"
+rename: "Rename"
+
+# List Display
+name: "Name"
+created_at: "Created At"
+operations: "Operations"
+
+# Error Messages
+invalid_challenge: "Invalid challenge, please try again"
+passkey_not_found: "Passkey not found"
+login_success: "Successfully signed in"
+operation_failed: "Operation failed: ':msg'"

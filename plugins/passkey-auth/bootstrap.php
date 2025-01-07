@@ -6,6 +6,7 @@ use App\Services\Plugin;
 use Illuminate\Contracts\Events\Dispatcher;
 use PasskeyAuth\Listeners\AuthenticationListener;
 use PasskeyAuth\Models\Passkey;
+use Illuminate\Support\Collection;
 
 return function (Dispatcher $events, Plugin $plugin, Filter $filter) {
     // 添加菜单项到用户侧边栏（放在靠前的位置）
@@ -15,17 +16,19 @@ return function (Dispatcher $events, Plugin $plugin, Filter $filter) {
         'icon'  => 'fa-key',
     ]);
 
-    // 添加 Passkey 登录按钮到 OAuth 登录页面
-    $filter->add('oauth_providers', function ($providers) {
-        // 只在登录页面显示 Passkey 按钮
-        if (request()->is('auth/login')) {
-            $providers->push([
-                'driver' => 'passkey',
-                'name' => trans('PasskeyAuth::general.login'),
-                'icon' => 'key'
-            ]);
-        }
-        return $providers;
+    // 注册 JavaScript 文件
+    Hook::addScriptFileToPage($plugin->assets('passkey-login.js'), ['auth/login', 'user/passkey']);
+
+    // 添加 Passkey 按钮到 OAuth 提供商列表
+    $filter->add('oauth_providers', function (Collection $providers) {
+        // 将 Passkey 放在列表最前面
+        return (new Collection([
+            'passkey' => [
+                'icon' => 'fingerprint',
+                'displayName' => trans('PasskeyAuth::general.login'),
+                'button' => true, // 标记这是一个按钮而不是链接
+            ]
+        ]))->union($providers);
     });
 
     // 添加徽章
@@ -40,13 +43,10 @@ return function (Dispatcher $events, Plugin $plugin, Filter $filter) {
         return $badges;
     });
 
-    // 注册 JavaScript 文件
-    Hook::addScriptFileToPage($plugin->assets('passkey-login.js'), ['user/passkey','auth/login']);
-
-    // 注册路由，优先级设为 1，确保在 OAuth 路由之前注册
+    // 注册路由，优先级设为最高，确保在其他路由之前注册
     Hook::addRoute(function () {
         Route::namespace('PasskeyAuth\\Controllers')
             ->group(__DIR__.'/routes.php');
-    }, 1);
+    }, -100);  // 使用负数优先级，数字越小优先级越高
 
 };
