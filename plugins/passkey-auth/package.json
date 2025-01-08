@@ -1,6 +1,6 @@
 {
   "name": "passkey-auth",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "title": "通行密钥",
   "description": "通过 WebAuthn/Passkey 实现无密码登录和多设备认证管理",
   "author": "graywolf",
