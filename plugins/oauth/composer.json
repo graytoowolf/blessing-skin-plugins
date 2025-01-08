@@ -1,6 +1,6 @@
 {
     "require": {
-        "socialiteproviders/manager": "4.1.0",
+        "socialiteproviders/manager": "4.0.1",
         "psr/log": "^1"
     }
 }
