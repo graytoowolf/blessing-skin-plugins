@@ -24,6 +24,12 @@ interface BlessingInterface {
 declare const blessing: BlessingInterface;
 declare function trans(key: string, params?: Record<string, string>): string;
 
+const CONSTANTS = {
+    ENDPOINTS: {
+        LOGIN_CHALLENGE: '/auth/login/passkey/challenge'
+    }
+};
+
 interface PublicKeyCredentialCreationOptionsExtended {
   user: {
       id: Uint8Array;
@@ -36,21 +42,22 @@ interface PublicKeyCredentialCreationOptionsExtended {
       name?: string;
   };
   pubKeyCredParams?: Array<{
-      type: string;
+      type: "public-key";
       alg: number;
   }>;
   timeout?: number;
   excludeCredentials?: Array<{
-      type: string;
+      type: "public-key";
       id: ArrayBuffer;
+      transports?: AuthenticatorTransport[];
   }>;
   authenticatorSelection?: {
-      authenticatorAttachment?: string;
+      authenticatorAttachment?: "platform" | "cross-platform";
       requireResidentKey?: boolean;
-      residentKey?: string;
-      userVerification?: string;
+      residentKey?: "discouraged" | "preferred" | "required";
+      userVerification?: "required" | "preferred" | "discouraged";
   };
-  attestation?: string;
+  attestation?: "none" | "indirect" | "direct";
 }
 
 function str2ab(str: string): Uint8Array {
@@ -129,9 +136,11 @@ document.addEventListener('DOMContentLoaded', async () => {
           blessing.notify.toast.info(trans('passkey-auth.verifying'));
 
           try {
+              const { challenge } = await blessing.fetch.get(CONSTANTS.ENDPOINTS.LOGIN_CHALLENGE);
+
               const credential = await navigator.credentials.get({
                   publicKey: {
-                      challenge: new Uint8Array(32),
+                      challenge: str2ab(challenge.replace(/-/g, '+').replace(/_/g, '/')),
                       rpId: window.location.hostname,
                       userVerification: 'preferred',
                       timeout: 60000
