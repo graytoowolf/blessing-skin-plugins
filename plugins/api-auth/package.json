@@ -1,0 +1,11 @@
+{
+  "name": "api-auth",
+  "version": "1.1.0",
+  "title": "API 密钥认证",
+  "description": "为 API 请求添加密钥认证功能, 通过密钥管理实现安全访问.中间件”api.auth”",
+  "author": "Your Name",
+  "namespace": "ApiAuth",
+  "require": {
+    "blessing-skin-server": "^5|^6"
+  }
+}

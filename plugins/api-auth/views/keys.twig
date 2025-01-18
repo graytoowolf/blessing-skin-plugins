@@ -1,0 +1,86 @@
+{% extends 'admin.base' %}
+
+{% block title %}API 密钥管理{% endblock %}
+
+{% block content %}
+<meta name="csrf-token" content="{{ csrf_token() }}">
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">API 密钥管理</h3>
+        <div class="float-right">
+            <button class="btn btn-primary" data-toggle="modal" data-target="#newKeyModal">
+                新建密钥
+            </button>
+        </div>
+    </div>
+    <div class="card-body table-responsive">
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>名称</th>
+                    <th>密钥</th>
+                    <th>最后使用时间</th>
+                    <th>过期时间</th>
+                    <th>状态</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for key in keys %}
+                <tr>
+                    <td>{{ key.name }}</td>
+                    <td>{{ key.key }}</td>
+                    <td>{{ key.last_used_at ? key.last_used_at|date('Y-m-d H:i:s') : '从未使用' }}</td>
+                    <td>{{ key.expires_at ? key.expires_at|date('Y-m-d H:i:s') : '永不过期' }}</td>
+                    <td>
+                        {% if key.expires_at %}
+                            {% if key.isExpired() %}
+                                <span class="badge badge-danger">已过期</span>
+                            {% else %}
+                                <span class="badge badge-success">有效</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="badge badge-info">永久</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <button class="btn btn-danger btn-sm delete-key" data-id="{{ key.id }}">删除</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 新建密钥模态框 -->
+<div class="modal fade" id="newKeyModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">新建 API 密钥</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="newKeyForm">
+                    <div class="form-group">
+                        <label>密钥名称</label>
+                        <input type="text" class="form-control" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>过期时间</label>
+                        <input type="datetime-local" class="form-control" name="expires_at">
+                        <small class="form-text text-muted">留空表示永不过期</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="generateKeyBtn">生成</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
