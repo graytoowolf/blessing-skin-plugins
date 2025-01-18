@@ -1,0 +1,84 @@
+{% extends 'admin.base' %}
+
+{% block title %}{{ trans('PasskeyAuth::general.admin.title') }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">{{ trans('PasskeyAuth::general.admin.list.title') }}</h3>
+    </div>
+    <div class="card-body table-responsive p-0">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>{{ trans('PasskeyAuth::general.admin.list.id') }}</th>
+                    <th>{{ trans('PasskeyAuth::general.admin.list.user') }}</th>
+                    <th>{{ trans('PasskeyAuth::general.admin.list.name') }}</th>
+                    <th>{{ trans('PasskeyAuth::general.admin.list.created_at') }}</th>
+                    <th>{{ trans('PasskeyAuth::general.admin.list.updated_at') }}</th>
+                    <th>{{ trans('PasskeyAuth::general.admin.list.operations') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if passkeys is not empty %}
+                    {% for passkey in passkeys %}
+                    <tr>
+                        <td>{{ passkey.id }}</td>
+                        <td>
+                            <a href="{{ url('admin/users?uid=' ~ passkey.user.uid) }}">
+                                {{ passkey.user.nickname }}
+                            </a>
+                        </td>
+                        <td>
+                            <span class="passkey-name" data-id="{{ passkey.id }}">{{ passkey.name }}</span>
+                            <a href="javascript:;" class="btn btn-sm btn-link" onclick="showRenameDialog({{ passkey.id }}, '{{ passkey.name }}')">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                        </td>
+                        <td>{{ passkey.created_at }}</td>
+                        <td>{{ passkey.updated_at }}</td>
+                        <td>
+                            <a href="javascript:;" class="btn btn-danger btn-sm" onclick="deletePasskey({{ passkey.id }})">
+                                {{ trans('PasskeyAuth::general.admin.list.delete') }}
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center">{{ trans('PasskeyAuth::general.admin.list.empty') }}</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+    <div class="card-footer">
+        {{ links|raw }}
+    </div>
+</div>
+
+<!-- 重命名对话框 -->
+<div class="modal fade" id="renameModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{{ trans('PasskeyAuth::front-end.admin.rename.title') }}</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="renamePasskeyId">
+                <div class="form-group">
+                    <label for="newName">{{ trans('PasskeyAuth::front-end.admin.rename.newName') }}</label>
+                    <input type="text" class="form-control" id="newName">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">{{ trans('PasskeyAuth::front-end.admin.rename.cancel') }}</button>
+                <button type="button" class="btn btn-primary" onclick="renamePasskey()">{{ trans('PasskeyAuth::front-end.admin.rename.submit') }}</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

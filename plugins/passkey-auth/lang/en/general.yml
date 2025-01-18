@@ -1,13 +1,13 @@
 # General
 manage: "Passkey Management"
 badge: "Passkey"
-notice: "Use passkeys to sign in without passwords, supporting biometric authentication methods like Windows Hello and fingerprint recognition."
+notice: "With passkeys, you can log in without entering a password, supporting biometric authentication methods like Windows Hello and fingerprint recognition."
 what_is_passkey: "What is a Passkey?"
 help_url: "https://support.google.com/chrome/answer/13168025?hl=en"
 
 # Operations
 add: "Add Passkey"
-login: "Sign in with Passkey"
+login: "Login with Passkey"
 delete: "Delete"
 rename: "Rename"
 
@@ -19,5 +19,24 @@ operations: "Operations"
 # Error Messages
 invalid_challenge: "Invalid challenge, please try again"
 passkey_not_found: "Passkey not found"
-login_success: "Successfully signed in"
+login_success: "Login successful"
 operation_failed: "Operation failed: ':msg'"
+
+admin:
+  title: "Passkey Management"
+  list:
+    title: "Passkey List"
+    empty: "No data available"
+    id: "ID"
+    user: "User"
+    name: "Passkey Name"
+    created_at: "Created At"
+    updated_at: "Last Used"
+    operations: "Operations"
+    delete: "Delete"
+    rename: "Rename"
+
+errors:
+  not_found: "Passkey not found"
+  rename_failed: "Rename failed"
+  delete_failed: "Delete failed"

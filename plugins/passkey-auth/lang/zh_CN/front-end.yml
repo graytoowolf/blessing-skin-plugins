@@ -33,3 +33,20 @@ delete_confirm_text: |
   如果确定，请在下方输入该通行密钥的名称。
 delete_success: "删除成功"
 delete_failed: "删除失败：':msg'"
+admin:
+  delete:
+    confirm: 确定要删除这个通行密钥吗？此操作不可恢复。
+    failed: 删除失败，请重试
+    success: 删除成功
+
+  rename:
+    title: 重命名密钥
+    newName: 新名称
+    empty: 请输入新名称
+    failed: 重命名失败，请重试
+    success: 重命名成功
+    cancel: 取消
+    submit: 确定
+
+error:
+  invalidResponse: 服务器返回了错误的响应格式

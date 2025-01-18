@@ -1,16 +1,16 @@
 # Operations
 add: "Add Passkey"
-login: "Sign in with Passkey"
+login: "Login with Passkey"
 delete: "Delete"
 rename: "Rename"
 
-# Status and Prompts
+# Status and Tips
 verifying: "Initiating verification..."
 not_supported: "Your device or browser does not support passkeys"
-login_success: "Successfully signed in"
-key_added: "Passkey added successfully"
-name_mismatch: "Name does not match"
-no_local_passkey: "No local passkey found. Please add a passkey in your user center first."
+login_success: "Login successful"
+key_added: "Passkey added"
+name_mismatch: "Name mismatch"
+no_local_passkey: "No local passkey found, please add a passkey in User Center first"
 
 # Error Messages
 verify_rejected: "Verification rejected"
@@ -18,18 +18,36 @@ operation_failed: "Operation failed: ':msg'"
 
 # Rename Related
 rename_title: "Rename Passkey"
-rename_text: "Enter new name"
-set_name: "Set a name for your passkey"
-rename_success: "Successfully renamed"
-rename_failed: "Failed to rename: ':msg'"
+rename_text: "Please enter a new name"
+set_name: "Please set a name for the passkey"
+rename_success: "Rename successful"
+rename_failed: "Rename failed: ':msg'"
 
 # Delete Related
 delete_confirm_title: "Delete Passkey"
 delete_confirm_text: |
   This action cannot be undone!
-  After deleting this passkey, you will no longer be able to sign in with it to ':msg'
-  We do not provide any backups, and there is no magic undo button.
-  You have been warned. Are you sure about this?
-  If you are sure, please enter the name of the passkey below.
-delete_success: "Successfully deleted"
-delete_failed: "Failed to delete: ':msg'"
+  After deleting this passkey, you will no longer be able to use it to log in to ':msg'
+  We do not provide any backups, nor is there any magic undo button.
+  We've warned you, are you sure you want to do this?
+  If you're sure, please enter the name of this passkey below.
+delete_success: "Delete successful"
+delete_failed: "Delete failed: ':msg'"
+
+admin:
+  delete:
+    confirm: "Are you sure you want to delete this passkey? This action cannot be undone."
+    failed: "Delete failed, please try again"
+    success: "Delete successful"
+
+  rename:
+    title: "Rename Passkey"
+    newName: "New Name"
+    empty: "Please enter a new name"
+    failed: "Rename failed, please try again"
+    success: "Rename successful"
+    cancel: "Cancel"
+    submit: "Submit"
+
+error:
+  invalidResponse: "Server returned an invalid response format"

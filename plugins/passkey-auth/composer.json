@@ -1,0 +1,6 @@
+{
+    "require": {
+        "php": "^8.0",
+        "web-auth/webauthn-lib": "^4.7"
+    }
+}

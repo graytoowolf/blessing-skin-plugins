@@ -2,22 +2,33 @@
 
 use Blessing\Filter;
 use App\Services\Hook;
-use App\Services\Plugin;
 use Illuminate\Contracts\Events\Dispatcher;
-use PasskeyAuth\Listeners\AuthenticationListener;
-use PasskeyAuth\Models\Passkey;
+use PasskeyAuth\Services\WebAuthnServer;
+use PasskeyAuth\Services\PasskeyCredentialSourceRepository;
+use Webauthn\PublicKeyCredentialRpEntity;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Event;
+use App\Events\RenderingFooter;
 
-return function (Dispatcher $events, Plugin $plugin, Filter $filter) {
+return function (Dispatcher $events,Filter $filter) {
+    // 注册 WebAuthn 服务
+    app()->singleton(WebAuthnServer::class, function ($app) {
+        $rpEntity = new PublicKeyCredentialRpEntity(
+            option('site_name'),
+            parse_url(url('/'), PHP_URL_HOST)
+        );
+
+        $repository = new PasskeyCredentialSourceRepository();
+
+        return new WebAuthnServer($rpEntity, $repository);
+    });
+
     // 添加菜单项到用户侧边栏（放在靠前的位置）
     Hook::addMenuItem('user', 3, [
         'title' => 'PasskeyAuth::general.manage',
         'link'  => 'user/passkey',
         'icon'  => 'fa-key',
     ]);
-
-    // 注册 JavaScript 文件
-    Hook::addScriptFileToPage($plugin->assets('passkey-login.js'), ['auth/login', 'user/passkey']);
 
     // 添加 Passkey 按钮到 OAuth 提供商列表
     $filter->add('oauth_providers', function (Collection $providers) {
@@ -31,22 +42,23 @@ return function (Dispatcher $events, Plugin $plugin, Filter $filter) {
         ]))->union($providers);
     });
 
-    // 添加徽章
-    $filter->add('user_badges', function ($badges, $user) {
-        if (Passkey::where('user_id', $user->uid)->count() > 0) {
-            $badges[] = [
-                'text' => trans('PasskeyAuth::general.badge'),  // 使用翻译文本
-                'color' => 'info',  // 使用蓝色
-                'icon' => 'key'     // 使用钥匙图标
-            ];
-        }
-        return $badges;
-    });
 
     // 注册路由，优先级设为最高，确保在其他路由之前注册
     Hook::addRoute(function () {
         Route::namespace('PasskeyAuth\\Controllers')
             ->group(__DIR__.'/routes.php');
     }, -100);  // 使用负数优先级，数字越小优先级越高
+
+
+    // 注册前端资源
+    Hook::addScriptFileToPage(plugin_assets('passkey-auth', 'passkey-login.js'), ['auth/login', 'user/passkey']);
+    Hook::addScriptFileToPage(plugin_assets('passkey-auth', 'passkey-admin.js'), ['admin/passkeys']);
+
+    Hook::addMenuItem('admin', 5, [
+        'title' => '通行密钥',
+        'link' => 'admin/passkeys',
+        'icon' => 'fa-key',
+    ]);
+
 
 };

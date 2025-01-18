@@ -1,23 +1,42 @@
-# 通用
+# General
 manage: "通行密钥管理"
 badge: "通行密钥"
-notice: "使用通行密钥可以让您无需输入密码即可登录，支持 Windows Hello、指纹识别等生物认证方式。"
+notice: "使用通行密钥，您可以无需输入密码即可登录，支持 Windows Hello、指纹等生物识别认证方式。"
 what_is_passkey: "什么是通行密钥？"
-help_url: "https://support.google.com/chrome/answer/13168025?hl=zh-Hans"
+help_url: "https://support.google.com/chrome/answer/13168025?hl=zh-CN"
 
-# 操作相关
+# Operations
 add: "添加通行密钥"
 login: "使用通行密钥登录"
 delete: "删除"
 rename: "重命名"
 
-# 列表显示
+# List Display
 name: "名称"
 created_at: "创建时间"
 operations: "操作"
 
-# 错误提示
-invalid_challenge: "无效的挑战，请重试"
-passkey_not_found: "未找到通行密钥"
+# Error Messages
+invalid_challenge: "无效的挑战值，请重试"
+passkey_not_found: "通行密钥不存在"
 login_success: "登录成功"
 operation_failed: "操作失败：':msg'"
+
+admin:
+  title: "通行密钥管理"
+  list:
+    title: "通行密钥列表"
+    empty: "暂无数据"
+    id: "ID"
+    user: "用户"
+    name: "密钥名称"
+    created_at: "创建时间"
+    updated_at: "最后使用"
+    operations: "操作"
+    delete: "删除"
+    rename: "重命名"
+
+errors:
+  not_found: "通行密钥不存在"
+  rename_failed: "重命名失败"
+  delete_failed: "删除失败"
