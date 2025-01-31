@@ -101,7 +101,6 @@ class WebAuthnServer
             if (json_last_error() !== JSON_ERROR_NONE) {
                 throw new \InvalidArgumentException('Invalid clientDataJSON: ' . json_last_error_msg());
             }
-            Log::debug('Decoded clientData:', ['clientData' => $decodedClientData]);
 
             $clientData = new CollectedClientData(
                 $clientDataJSON,
@@ -110,13 +109,11 @@ class WebAuthnServer
 
             // attestationObjectLoader 会自动处理解码
             $attestationObject = $this->attestationObjectLoader->load($data['response']['attestationObject']);
-            Log::debug('Loaded attestationObject');
 
             $response = new AuthenticatorAttestationResponse(
                 $clientData,
                 $attestationObject
             );
-            Log::debug('Created AuthenticatorAttestationResponse');
 
             $publicKeyCredential = new PublicKeyCredential(
                 $data['id'],
@@ -124,7 +121,6 @@ class WebAuthnServer
                 Base64::decode($data['rawId']),
                 $response
             );
-            Log::debug('Created PublicKeyCredential');
 
             $result = $this->attestationResponseValidator->check(
                 $response,
@@ -145,54 +141,55 @@ class WebAuthnServer
 
     public function verifyAssertion($publicKeyCredentialRequestOptions, array $data, string $origin = null)
     {
+        $clientDataJSON = Base64::decode($data['response']['clientDataJSON']);
+        $decodedClientData = json_decode($clientDataJSON, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new \InvalidArgumentException('客户端数据格式无效: ' . json_last_error_msg());
+        }
+
+        $clientData = new CollectedClientData(
+            $clientDataJSON,
+            $decodedClientData
+        );
+
+        // 解析认证数据
+        $authenticatorDataString = Base64::decode($data['response']['authenticatorData']);
+        $rpIdHash = substr($authenticatorDataString, 0, 32);
+        $flags = substr($authenticatorDataString, 32, 1);
+        $signCount = unpack('N', substr($authenticatorDataString, 33, 4))[1];
+
         try {
-            Log::debug('WebAuthn verifyAssertion data:', [
-                'data' => $data,
-                'options' => $publicKeyCredentialRequestOptions
-            ]);
-
-            $clientDataJSON = Base64::decode($data['response']['clientDataJSON']);
-            $decodedClientData = json_decode($clientDataJSON, true);
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                throw new \InvalidArgumentException('Invalid clientDataJSON: ' . json_last_error_msg());
-            }
-            Log::debug('Decoded clientData:', ['clientData' => $decodedClientData]);
-
-            $clientData = new CollectedClientData(
-                $clientDataJSON,
-                $decodedClientData
-            );
-
-            // 解析认证数据
-            $authenticatorDataString = Base64::decode($data['response']['authenticatorData']);
-            $rpIdHash = substr($authenticatorDataString, 0, 32);
-            $flags = substr($authenticatorDataString, 32, 1);
-            $signCount = unpack('N', substr($authenticatorDataString, 33, 4))[1];
-
-            $authenticatorData = AuthenticatorData::create(
+            $authenticatorData = new AuthenticatorData(
                 $authenticatorDataString,
                 $rpIdHash,
                 $flags,
-                $signCount
+                $signCount,
+                null,  // aaguid
+                null   // attestedCredentialData
             );
-            Log::debug('Created AuthenticatorData');
+        } catch (\Exception $e) {
+            throw new \Exception('验证器数据无效: ' . $e->getMessage());
+        }
 
+        try {
             $response = new AuthenticatorAssertionResponse(
                 $clientData,
                 $authenticatorData,
                 Base64::decode($data['response']['signature']),
                 $data['response']['userHandle'] ? Base64::decode($data['response']['userHandle']) : null
             );
-            Log::debug('Created AuthenticatorAssertionResponse');
+        } catch (\Exception $e) {
+            throw new \Exception('验证响应无效: ' . $e->getMessage());
+        }
 
-            $publicKeyCredential = new PublicKeyCredential(
-                $data['id'],
-                $data['type'],
-                Base64::decode($data['rawId']),
-                $response
-            );
-            Log::debug('Created PublicKeyCredential');
+        $publicKeyCredential = new PublicKeyCredential(
+            $data['id'],
+            $data['type'],
+            Base64::decode($data['rawId']),
+            $response
+        );
 
+        try {
             $result = $this->assertionResponseValidator->check(
                 $publicKeyCredential->rawId,
                 $response,
@@ -201,14 +198,20 @@ class WebAuthnServer
                 null  // userHandle (optional)
             );
             Log::debug('Validation successful');
-
             return $result;
         } catch (\Exception $e) {
-            Log::error('WebAuthn verifyAssertion error:', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            throw $e;
+            // 转换常见错误消息为中文
+            $message = $e->getMessage();
+            if (strpos($message, 'The credential ID is invalid') !== false) {
+                throw new \Exception('无效的凭证ID，请确保使用正确的通行密钥');
+            } else if (strpos($message, 'Invalid signature') !== false) {
+                throw new \Exception('签名验证失败，请重试');
+            } else if (strpos($message, 'User verification failed') !== false) {
+                throw new \Exception('用户验证失败，请重试');
+            } else {
+                throw new \Exception('验证失败: ' . $message);
+            }
         }
+
     }
 }

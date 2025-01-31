@@ -1,117 +1,94 @@
-// 定义类型
-interface Window {
-    blessing: {
-        base_url: string;
-    }
-}
+// 全局类型声明
+declare const blessing: {
+  base_url: string;
+};
 
-interface ApiResponse {
-    message: string;
-    code?: number;
-}
+declare function trans(key: string, params?: Record<string, unknown>): string;
 
-function getCsrfToken(): string {
-    const metaElement = document.querySelector('meta[name="csrf-token"]');
-    if (!metaElement) {
-        throw new Error('CSRF token meta tag not found');
-    }
-    const token = metaElement.getAttribute('content');
-    if (!token) {
-        throw new Error('CSRF token not found');
-    }
-    return token;
-}
+// CSRF Token 获取
+const getCsrfToken = (): string => {
+  const csrfMeta = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]');
+  return csrfMeta?.getAttribute('content') || '';
+};
 
-async function deletePasskey(id: number | string): Promise<void> {
-    if (!confirm(trans('passkey-auth.admin.delete.confirm'))) {
-        return;
-    }
+// 删除 Passkey
+export const deletePasskey = (id: string): void => {
+  if (!confirm(trans('passkey-auth.admin.delete.confirm'))) return;
 
-    try {
-        const response = await fetch(`${blessing.base_url}/admin/passkeys/${id}/delete`, {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': getCsrfToken(),
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-        });
+  fetch(`${blessing.base_url}/admin/passkeys/${id}/delete`, {
+    method: 'POST',
+    headers: {
+      'X-CSRF-TOKEN': getCsrfToken(),
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    },
+  })
+    .then(async (response): Promise<any> => {
+      if (response.headers.get('content-type')?.includes('text/html')) {
+        throw new Error(trans('passkey-auth.error.invalidResponse'));
+      }
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || trans('passkey-auth.admin.delete.failed'));
+      }
+      return data;
+    })
+    .then((data: { message: string }): void => {
+      alert(data.message);
+      location.reload();
+    })
+    .catch((error: Error): void => {
+      alert(error.message || trans('passkey-auth.admin.delete.failed'));
+    });
+};
 
-        if (response.headers.get('content-type')?.includes('text/html')) {
-            throw new Error(trans('passkey-auth.error.invalidResponse'));
-        }
+// 重命名模态框操作
+declare const $: {
+  (selector: string): any;
+  modal: (action: 'show' | 'hide') => void;
+  val: (value?: string) => string;
+};
 
-        const data = await response.json() as ApiResponse;
-        if (!response.ok) {
-            throw new Error(data.message || trans('passkey-auth.admin.delete.failed'));
-        }
+export const showRenameDialog = (id: string, currentName: string): void => {
+  $('#renamePasskeyId').val(id);
+  $('#newName').val(currentName);
+  $('#renameModal').modal('show');
+};
 
-        alert(data.message);
-        location.reload();
-    } catch (error) {
-        alert(error instanceof Error ? error.message : trans('passkey-auth.admin.delete.failed'));
-    }
-}
+export const renamePasskey = (): void => {
+  const id = $('#renamePasskeyId').val() as string;
+  const newName = ($('#newName').val() as string).trim();
 
-function showRenameDialog(id: number | string, currentName: string): void {
-    const renameIdInput = document.querySelector<HTMLInputElement>('#renamePasskeyId');
-    const newNameInput = document.querySelector<HTMLInputElement>('#newName');
-    const renameModal = document.querySelector<HTMLElement>('#renameModal');
+  if (!newName) {
+    alert(trans('passkey-auth.admin.rename.empty'));
+    return;
+  }
 
-    if (!renameIdInput || !newNameInput || !renameModal) {
-        console.error('Required elements not found');
-        return;
-    }
-
-    renameIdInput.value = String(id);
-    newNameInput.value = currentName;
-
-    // 使用 Bootstrap 的类型定义
-    ($(renameModal) as any).modal('show');
-}
-
-async function renamePasskey(): Promise<void> {
-    const renameIdInput = document.querySelector<HTMLInputElement>('#renamePasskeyId');
-    const newNameInput = document.querySelector<HTMLInputElement>('#newName');
-    const renameModal = document.querySelector<HTMLElement>('#renameModal');
-
-    if (!renameIdInput || !newNameInput || !renameModal) {
-        console.error('Required elements not found');
-        return;
-    }
-
-    const id = renameIdInput.value;
-    const newName = newNameInput.value.trim();
-
-    if (!newName) {
-        alert(trans('passkey-auth.admin.rename.empty'));
-        return;
-    }
-
-    try {
-        const response = await fetch(`${blessing.base_url}/admin/passkeys/${id}/rename`, {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': getCsrfToken(),
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({ name: newName })
-        });
-
-        if (response.headers.get('content-type')?.includes('text/html')) {
-            throw new Error(trans('passkey-auth.error.invalidResponse'));
-        }
-
-        const data = await response.json() as ApiResponse;
-        if (!response.ok) {
-            throw new Error(data.message || trans('passkey-auth.admin.rename.failed'));
-        }
-
-        alert(data.message);
-        ($(renameModal) as any).modal('hide');
-        location.reload();
-    } catch (error) {
-        alert(error instanceof Error ? error.message : trans('passkey-auth.admin.rename.failed'));
-    }
-}
+  fetch(`${blessing.base_url}/admin/passkeys/${id}/rename`, {
+    method: 'POST',
+    headers: {
+      'X-CSRF-TOKEN': getCsrfToken(),
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    },
+    body: JSON.stringify({ name: newName }),
+  })
+    .then(async (response): Promise<any> => {
+      if (response.headers.get('content-type')?.includes('text/html')) {
+        throw new Error(trans('passkey-auth.error.invalidResponse'));
+      }
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || trans('passkey-auth.admin.rename.failed'));
+      }
+      return data;
+    })
+    .then((data: { message: string }): void => {
+      alert(data.message);
+      $('#renameModal').modal('hide');
+      location.reload();
+    })
+    .catch((error: Error): void => {
+      alert(error.message || trans('passkey-auth.admin.rename.failed'));
+    });
+};

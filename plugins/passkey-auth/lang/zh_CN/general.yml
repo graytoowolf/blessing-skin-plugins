@@ -8,6 +8,7 @@ help_url: "https://support.google.com/chrome/answer/13168025?hl=zh-CN"
 # Operations
 add: "添加通行密钥"
 login: "使用通行密钥登录"
+alt-login: 其它登录方式
 delete: "删除"
 rename: "重命名"
 

@@ -2,6 +2,7 @@
 
 use Blessing\Filter;
 use App\Services\Hook;
+use App\Services\PluginManager;
 use Illuminate\Contracts\Events\Dispatcher;
 use PasskeyAuth\Services\WebAuthnServer;
 use PasskeyAuth\Services\PasskeyCredentialSourceRepository;
@@ -10,7 +11,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Event;
 use App\Events\RenderingFooter;
 
-return function (Dispatcher $events,Filter $filter) {
+return function (Dispatcher $events,Filter $filter,PluginManager $plugins) {
     // 注册 WebAuthn 服务
     app()->singleton(WebAuthnServer::class, function ($app) {
         $rpEntity = new PublicKeyCredentialRpEntity(
@@ -29,18 +30,36 @@ return function (Dispatcher $events,Filter $filter) {
         'link'  => 'user/passkey',
         'icon'  => 'fa-key',
     ]);
-
-    // 添加 Passkey 按钮到 OAuth 提供商列表
-    $filter->add('oauth_providers', function (Collection $providers) {
-        // 将 Passkey 放在列表最前面
-        return (new Collection([
-            'passkey' => [
+    $oauth = $plugins->get('oauth'); // 插件标识符需要与 composer.json 中 name 字段一致
+    $isOAuthEnabled = $oauth && $oauth->isEnabled();
+    // 场景1: OAuth 启用时集成到提供商列表
+    if ($isOAuthEnabled) {
+        $filter->add('oauth_providers', function ($providers) {
+            return $providers->put('passkey', [
                 'icon' => 'fingerprint',
                 'displayName' => trans('PasskeyAuth::general.login'),
-                'button' => true, // 标记这是一个按钮而不是链接
-            ]
-        ]))->union($providers);
-    });
+                'button' => true,
+                'class' => 'bg-light border-secondary',
+                'brand' => false
+            ]);
+        });
+    }
+    // 场景2: OAuth 未启用时直接注入到登录页面
+    else {
+        $filter->add('auth_page_rows:login', function ($rows) {
+            // 定位登录按钮位置
+            $loginIndex = array_search('auth.login-submit', $rows);
+
+            if ($loginIndex !== false) {
+                array_splice($rows, $loginIndex + 1, 0, ['PasskeyAuth::passkey-button']);
+            } else {
+                array_splice($rows, count($rows) - 1, 0, ['PasskeyAuth::passkey-button']);
+            }
+
+            return $rows;
+        });
+    }
+
 
 
     // 注册路由，优先级设为最高，确保在其他路由之前注册

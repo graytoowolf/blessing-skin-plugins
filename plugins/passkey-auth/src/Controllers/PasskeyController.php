@@ -184,12 +184,6 @@ class PasskeyController extends Controller
         $token = bin2hex(random_bytes(16));
         cache()->put('passkey_request_options:' . $token, $options, now()->addMinutes(5));
 
-        Log::debug('Generated login challenge:', [
-            'challenge' => $this->base64_urlsafe_encode($challenge),
-            'options' => $options,
-            'token' => $token
-        ]);
-
         return response()->json([
             'challenge' => $this->base64_urlsafe_encode($challenge),
             'timeout' => 300000,
@@ -203,10 +197,6 @@ class PasskeyController extends Controller
     public function login(Request $request)
     {
         $token = $request->input('token');
-        Log::debug('Login request:', [
-            'credentials' => $request->input('credentials'),
-            'token' => $token
-        ]);
 
         $requestOptions = cache()->get('passkey_request_options:' . $token);
         if (!$requestOptions) {
@@ -222,38 +212,38 @@ class PasskeyController extends Controller
                 $request->input('credentials'),
                 'https://' . parse_url(url('/'), PHP_URL_HOST)
             );
-
-            $passkey = Passkey::where('credential_id', $this->base64_urlsafe_encode($publicKeyCredentialSource->getPublicKeyCredentialId()))->first();
-            if (!$passkey) {
-                return response()->json(['message' => '未找到对应的密钥'], 400);
-            }
-
-            $user = $passkey->user;
-            if (!$user) {
-                return response()->json(['message' => '未找到对应的用户'], 400);
-            }
-
-            Log::debug('Login user:', [
-                'email' => $user->email,
-                'id' => $user->uid
-            ]);
-
-            Auth::login($user);
-
-            return response()->json([
-                'code' => 0,
-                'message' => '登录成功',
-                'data' => [
-                    'redirect' => '/user'
-                ]
-            ]);
-
         } catch (\Exception $e) {
-            Log::error('WebAuthn verifyAssertion error:', [
+            // 记录日志但不作为错误处理
+            Log::info('WebAuthn login attempt failed:', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'credentials' => $request->input('credentials')
             ]);
-            return response()->json(['message' => $e->getMessage()], 400);
+            return response()->json(['message' => '无效的凭证ID，请确保使用正确的通行密钥'], 400);
         }
+
+        $passkey = Passkey::where('credential_id', $this->base64_urlsafe_encode($publicKeyCredentialSource->getPublicKeyCredentialId()))->first();
+        if (!$passkey) {
+            return response()->json(['message' => '未找到对应的密钥'], 400);
+        }
+
+        $user = $passkey->user;
+        if (!$user) {
+            return response()->json(['message' => '未找到对应的用户'], 400);
+        }
+
+        Log::debug('Login user:', [
+            'email' => $user->email,
+            'id' => $user->uid
+        ]);
+
+        Auth::login($user);
+
+        return response()->json([
+            'code' => 0,
+            'message' => '登录成功',
+            'data' => [
+                'redirect' => '/user'
+            ]
+        ]);
     }
 }

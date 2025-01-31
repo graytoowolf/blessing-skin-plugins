@@ -1,0 +1,10 @@
+{# resources/views/passkey-button.twig #}
+<div class="my-3 text-center">
+  <div class="mb-1">{{ trans('PasskeyAuth::general.alt-login') }}</div>
+  <button id="passkey-login"
+          class="btn btn-block bg-light border-secondary mb-2"
+          onclick="handlePasskeyAuth()">
+    <i class="fas fa-fingerprint"></i>&nbsp;
+    {{ trans('PasskeyAuth::general.login') }}
+  </button>
+</div>
