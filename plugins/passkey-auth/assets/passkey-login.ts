@@ -27,10 +27,10 @@ const base64urlDecode = (input: string): ArrayBuffer => {
 // 错误处理
 const handleError = (error: unknown, defaultTransKey: string): void => {
   if (error instanceof DOMException && error.name === 'NotAllowedError') {
-    globalThis.blessing.notify.toast.warning(globalThis.trans('passkey-auth.verify_rejected'));
+    blessing.notify.toast.warning(trans('passkey-auth.verify_rejected'));
   } else {
     const message = error instanceof Error ? error.message : String(error);
-    globalThis.blessing.notify.toast.error(globalThis.trans(defaultTransKey, { msg: message }));
+    blessing.notify.toast.error(trans(defaultTransKey, { msg: message }));
   }
 };
 
@@ -42,9 +42,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     registerButton.addEventListener('click', async () => {
       try {
         registerButton.disabled = true;
-        globalThis.blessing.notify.toast.success(globalThis.trans('passkey-auth.verifying'));
+        blessing.notify.toast.success(trans('passkey-auth.verifying'));
 
-        const data = await globalThis.blessing.fetch.get<any>('/user/passkey/register');
+        const data = await blessing.fetch.get<any>('/user/passkey/register');
         const credential = (await navigator.credentials.create({
           publicKey: {
             ...data,
@@ -78,20 +78,20 @@ document.addEventListener('DOMContentLoaded', async () => {
           clientExtensionResults: credential.getClientExtensionResults(),
         };
 
-        const result = await globalThis.blessing.fetch.post<{ data?: { id: string } }>('/user/passkey/register', response);
+        const result = await blessing.fetch.post<{ data?: { id: string } }>('/user/passkey/register', response);
         if (!result.data?.id) throw new Error('Invalid server response');
 
-        const nameModal = await globalThis.blessing.notify.showModal({
+        const nameModal = await blessing.notify.showModal({
           mode: 'prompt',
-          title: globalThis.trans('passkey-auth.rename_title'),
-          text: globalThis.trans('passkey-auth.set_name'),
+          title: trans('passkey-auth.rename_title'),
+          text: trans('passkey-auth.set_name'),
           placeholder: 'Passkey',
         });
 
         const passKeyName = nameModal.value || `Passkey ${new Date().toLocaleString()}`;
-        await globalThis.blessing.fetch.post(`/user/passkey/${result.data.id}/rename`, { name: passKeyName });
+        await blessing.fetch.post(`/user/passkey/${result.data.id}/rename`, { name: passKeyName });
 
-        globalThis.blessing.notify.toast.success(globalThis.trans('passkey-auth.key_added'));
+        blessing.notify.toast.success(trans('passkey-auth.key_added'));
         location.reload();
       } catch (error) {
         handleError(error, 'passkey-auth.operation_failed');
@@ -107,9 +107,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     loginButton.addEventListener('click', async () => {
       try {
         loginButton.disabled = true;
-        globalThis.blessing.notify.toast.info(globalThis.trans('passkey-auth.verifying'));
+        blessing.notify.toast.info(trans('passkey-auth.verifying'));
 
-        const data = await globalThis.blessing.fetch.get<any>('/auth/login/passkey/challenge');
+        const data = await blessing.fetch.get<any>('/auth/login/passkey/challenge');
         const credential = (await navigator.credentials.get({
           publicKey: {
             ...data,
@@ -139,7 +139,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           clientExtensionResults: credential.getClientExtensionResults(),
         };
 
-        const result = await globalThis.blessing.fetch.post<{ code: number; data?: { redirect?: string } }>(
+        const result = await blessing.fetch.post<{ code: number; data?: { redirect?: string } }>(
           '/auth/login/passkey',
           {
             type: 'passkey',
@@ -149,12 +149,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         );
 
         if (result.code === 0) {
-          globalThis.blessing.notify.toast.success(globalThis.trans('passkey-auth.login_success'));
+          blessing.notify.toast.success(trans('passkey-auth.login_success'));
           setTimeout(() => {
             window.location.href = result.data?.redirect || '/user';
           }, 1000);
         } else {
-          globalThis.blessing.notify.toast.error(result['message'] || globalThis.trans('passkey-auth.no_local_passkey'));
+          blessing.notify.toast.error(result['message'] || trans('passkey-auth.no_local_passkey'));
         }
       } catch (error) {
         handleError(error, 'passkey-auth.operation_failed');
@@ -174,26 +174,26 @@ document.addEventListener('DOMContentLoaded', async () => {
       const nameElement = card.querySelector<HTMLElement>('.col-8');
       const name = nameElement?.textContent?.trim() || '';
 
-      const result = await globalThis.blessing.notify.showModal({
+      const result = await blessing.notify.showModal({
         mode: 'prompt',
         type: 'danger',
-        title: globalThis.trans('passkey-auth.delete_confirm_title'),
-        text: globalThis.trans('passkey-auth.delete_confirm_text', { msg: globalThis.blessing.site_name }),
+        title: trans('passkey-auth.delete_confirm_title'),
+        text: trans('passkey-auth.delete_confirm_text', { msg: blessing.site_name }),
         placeholder: name,
       });
 
       if (result.value === name) {
         try {
-          await globalThis.blessing.fetch.post(`/user/passkey/${id}/delete`);
-          globalThis.blessing.notify.toast.success(globalThis.trans('passkey-auth.delete_success'));
+          await blessing.fetch.post(`/user/passkey/${id}/delete`);
+          blessing.notify.toast.success(trans('passkey-auth.delete_success'));
           card.remove();
         } catch (error) {
-          globalThis.blessing.notify.toast.error(
-            globalThis.trans('passkey-auth.delete_failed', { msg: (error as Error).message })
+          blessing.notify.toast.error(
+            trans('passkey-auth.delete_failed', { msg: (error as Error).message })
           );
         }
       } else if (result.value) {
-        globalThis.blessing.notify.toast.warning(globalThis.trans('passkey-auth.name_mismatch'));
+        blessing.notify.toast.warning(trans('passkey-auth.name_mismatch'));
       }
     });
   });
@@ -208,21 +208,21 @@ document.addEventListener('DOMContentLoaded', async () => {
       const nameElement = card.querySelector<HTMLElement>('.col-8');
       const currentName = nameElement?.textContent?.trim() || '';
 
-      const result = await globalThis.blessing.notify.showModal({
+      const result = await blessing.notify.showModal({
         mode: 'prompt',
-        title: globalThis.trans('passkey-auth.rename_title'),
-        text: globalThis.trans('passkey-auth.rename_text'),
+        title: trans('passkey-auth.rename_title'),
+        text: trans('passkey-auth.rename_text'),
         placeholder: currentName,
       });
 
       if (result.value) {
         try {
-          await globalThis.blessing.fetch.post(`/user/passkey/${id}/rename`, { name: result.value });
+          await blessing.fetch.post(`/user/passkey/${id}/rename`, { name: result.value });
           if (nameElement) nameElement.textContent = result.value;
-          globalThis.blessing.notify.toast.success(globalThis.trans('passkey-auth.rename_success'));
+          blessing.notify.toast.success(trans('passkey-auth.rename_success'));
         } catch (error) {
-          globalThis.blessing.notify.toast.error(
-            globalThis.trans('passkey-auth.rename_failed', { msg: (error as Error).message })
+          blessing.notify.toast.error(
+            trans('passkey-auth.rename_failed', { msg: (error as Error).message })
           );
         }
       }
