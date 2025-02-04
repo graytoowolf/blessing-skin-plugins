@@ -26,13 +26,5 @@ return [
         } catch (Exception $e) {
             return false;
         }
-    },
-
-    App\Events\PluginWasDisabled::class => function () {
-        try {
-            return true;
-        } catch (Exception $e) {
-            return false;
-        }
     }
 ];

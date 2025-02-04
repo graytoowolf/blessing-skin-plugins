@@ -1,125 +1,112 @@
 /**
- * 获取 CSRF Token
- * @returns CSRF Token 字符串
- */
+* 获取 CSRF Token
+*/
 function getCsrfToken(): string {
   const meta = document.querySelector('meta[name="csrf-token"]');
   if (!meta) {
-    throw new Error('CSRF token meta tag not found');
+      throw new Error('CSRF token meta tag not found');
   }
   return meta.getAttribute('content') || '';
 }
-
 /**
- * 统一处理请求的公共函数
- * @param url 请求地址
- * @param options 请求参数
- * @returns 返回 Promise，解析后的 JSON 数据
- */
-async function sendRequest<T = any>(url: string, options: RequestInit = {}): Promise<T> {
-  const defaultHeaders: HeadersInit = {
-    'X-CSRF-TOKEN': getCsrfToken(),
-    'Content-Type': 'application/json',
-    'Accept': 'application/json'
-  };
-
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      ...defaultHeaders,
-      ...(options.headers || {})
-    }
-  });
-
-  // 检查响应内容类型，如果为 HTML 则认为响应无效
-  const contentType = response.headers.get('content-type');
-  if (contentType && contentType.indexOf('text/html') !== -1) {
-    throw new Error(blessing.t('passkey-auth.error.invalidResponse'));
+* 更新表格中的 passkey 名称
+*/
+function updatePasskeyName(id: string | number, newName: string): void {
+  const nameSpan = document.querySelector<HTMLSpanElement>(`span.passkey-name[data-id="${id}"]`);
+  if (nameSpan) {
+      nameSpan.textContent = newName;
   }
+}
 
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data.message || 'An error occurred.');
+/**
+* 移除表格中的 passkey 行
+*/
+function removePasskeyRow(id: string | number): void {
+  const nameSpan = document.querySelector<HTMLSpanElement>(`span.passkey-name[data-id="${id}"]`);
+  if (nameSpan) {
+      const row = nameSpan.closest('tr');
+      if (row) {
+          row.remove();
+
+          const tbody = document.querySelector('tbody');
+          if (tbody) {
+              const remainingRows = tbody.querySelectorAll('tr');
+              if (remainingRows.length === 0 ||
+                  (remainingRows.length === 1 && remainingRows[0].querySelector('td[colspan]'))) {
+                  location.reload();
+              }
+          }
+      }
   }
-  return data as T;
 }
 
-interface RenameResponse {
-  message: string;
-}
+// 初始化事件监听器
+document.addEventListener('DOMContentLoaded', () => {
+  // 重命名按钮事件监听
+  document.querySelectorAll<HTMLButtonElement>('.btn-link').forEach(button => {
+      button.addEventListener('click', async () => {
+          const nameSpan = button.previousElementSibling as HTMLSpanElement;
+          if (!nameSpan) return;
 
-interface DeleteResponse {
-  message: string;
-}
+          const id = nameSpan.getAttribute('data-id');
+          if (!id) return;
 
-interface ModalResult {
-  value: string;
-}
+          const currentName = nameSpan.textContent || '';
 
-/**
- * 重命名 passkey
- * 使用 blessing.notify.showModal 获取用户输入的新名称，
- * 如果输入为空则提示错误，否则发起重命名请求。
- * @param id passkey 的标识符
- * @param currentName 当前名称
- */
-function renamePasskey(id: string | number, currentName: string): void {
-  blessing.notify.showModal({
-    mode: "prompt",
-    title: blessing.t('passkey-auth.admin.rename.title'),
-    text: blessing.t('passkey-auth.admin.rename.empty'),
-    placeholder: currentName
-  })
-  .then((newNameInput: string | ModalResult) => {
-    let newName: string;
-    // 如果返回的是对象且含有 value 属性，则使用 value，否则直接转换为字符串
-    if (typeof newNameInput === 'object' && newNameInput !== null && 'value' in newNameInput) {
-      newName = String(newNameInput.value || '').trim();
-    } else {
-      newName = String(newNameInput || '').trim();
-    }
+          try {
+              const result = await blessing.notify.showModal({
+                  mode: 'prompt',
+                  title: trans('passkey-auth.admin.rename.title'),
+                  text: trans('passkey-auth.admin.rename.empty'),
+                  placeholder: currentName
+              });
 
-    if (!newName) {
-      alert(blessing.t('passkey-auth.admin.rename.empty'));
-      return;
-    }
+              const newName = result.value.trim();
 
-    return sendRequest<RenameResponse>(blessing.base_url + '/admin/passkeys/' + id + '/rename', {
-      method: 'POST',
-      body: JSON.stringify({ name: newName })
-    })
-    .then((data) => {
-      alert(data.message);
-      location.reload();
-    })
-    .catch((error: Error) => {
-      alert(error.message || blessing.t('passkey-auth.admin.rename.failed'));
-    });
-  })
-  .catch((error: Error) => {
-    // 模态框关闭或发生错误时的处理（可选）
-    console.error(error);
+              if (!newName) {
+                  blessing.notify.toast.error(trans('passkey-auth.admin.rename.empty'));
+                  return;
+              }
+
+              const data = await blessing.fetch.post(`/admin/passkeys/${id}/rename`,
+                { name: newName }
+              );
+
+              updatePasskeyName(id, newName);
+              blessing.notify.toast.success(data.message);
+          } catch (error) {
+              blessing.notify.toast.error(
+                  error instanceof Error ? error.message : trans('passkey-auth.admin.rename.failed')
+              );
+          }
+      });
   });
-}
 
-/**
- * 删除 passkey
- * @param id passkey 的标识符
- * @param name passkey 的名称（可用于提示信息）
- */
-function deletePasskey(id: string | number, name: string): void {
-  sendRequest<DeleteResponse>(blessing.base_url + '/admin/passkeys/' + id + '/delete', {
-    method: 'POST'
-  })
-  .then((data) => {
-    alert(data.message);
-    location.reload();
-  })
-  .catch((error: Error) => {
-    alert(error.message || blessing.t('passkey-auth.admin.delete.failed'));
+  // 删除按钮事件监听
+  document.querySelectorAll<HTMLButtonElement>('.btn-danger').forEach(button => {
+      button.addEventListener('click', async () => {
+          const row = button.closest('tr');
+          if (!row) return;
+
+          const nameSpan = row.querySelector<HTMLSpanElement>('.passkey-name');
+          if (!nameSpan) return;
+
+          const id = nameSpan.getAttribute('data-id');
+          if (!id) return;
+
+          const confirmed = confirm(trans('passkey-auth.admin.delete.confirm'));
+          if (!confirmed) return;
+
+          try {
+              const data = await blessing.fetch.post(`/admin/passkeys/${id}/delete`);
+
+              removePasskeyRow(id);
+              blessing.notify.toast.success(data.message);
+          } catch (error) {
+              blessing.notify.toast.error(
+                  error instanceof Error ? error.message : trans('passkey-auth.admin.delete.failed')
+              );
+          }
+      });
   });
-}
-
-// 将函数挂载到 window 对象上以供全局使用
-(window as any).renamePasskey = renamePasskey;
-(window as any).deletePasskey = deletePasskey;
+});
