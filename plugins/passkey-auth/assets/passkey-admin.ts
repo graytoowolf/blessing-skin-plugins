@@ -120,7 +120,6 @@ function deletePasskey(id: string | number, name: string): void {
   });
 }
 
-export {
-  renamePasskey,
-  deletePasskey
-};
+// 将函数挂载到 window 对象上以供全局使用
+(window as any).renamePasskey = renamePasskey;
+(window as any).deletePasskey = deletePasskey;
