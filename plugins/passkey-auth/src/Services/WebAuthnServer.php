@@ -66,11 +66,13 @@ class WebAuthnServer
         );
     }
 
-    private function base64_urlsafe_encode($data) {
+    private function base64_urlsafe_encode($data)
+    {
         return str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($data));
     }
 
-    private function base64_urlsafe_decode($data) {
+    private function base64_urlsafe_decode($data)
+    {
         // 移除可能存在的空格和换行符
         $data = trim($data);
         // 替换 base64url 特殊字符
@@ -91,11 +93,6 @@ class WebAuthnServer
     public function createCredential($publicKeyCredentialCreationOptions, array $data)
     {
         try {
-            Log::debug('WebAuthn createCredential data:', [
-                'data' => $data,
-                'options' => $publicKeyCredentialCreationOptions
-            ]);
-
             $clientDataJSON = Base64::decode($data['response']['clientDataJSON']);
             $decodedClientData = json_decode($clientDataJSON, true);
             if (json_last_error() !== JSON_ERROR_NONE) {
@@ -127,7 +124,6 @@ class WebAuthnServer
                 $publicKeyCredentialCreationOptions,
                 'https://' . parse_url(url('/'), PHP_URL_HOST)
             );
-            Log::debug('Validation successful');
 
             return $result;
         } catch (\Exception $e) {
@@ -197,7 +193,6 @@ class WebAuthnServer
                 $origin,
                 null  // userHandle (optional)
             );
-            Log::debug('Validation successful');
             return $result;
         } catch (\Exception $e) {
             // 转换常见错误消息为中文
@@ -212,6 +207,5 @@ class WebAuthnServer
                 throw new \Exception('验证失败: ' . $message);
             }
         }
-
     }
 }
