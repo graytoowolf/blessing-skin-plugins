@@ -174,26 +174,35 @@ document.addEventListener('DOMContentLoaded', async () => {
       const nameElement = card.querySelector<HTMLElement>('.col-8');
       const name = nameElement?.textContent?.trim() || '';
 
-      const result = await blessing.notify.showModal({
-        mode: 'prompt',
-        type: 'danger',
-        title: trans('passkey-auth.delete_confirm_title'),
-        text: trans('passkey-auth.delete_confirm_text', { msg: blessing.site_name }),
-        placeholder: name,
-      });
+      try {
+        const result = await blessing.notify.showModal({
+          mode: 'prompt',
+          type: 'danger',
+          title: trans('passkey-auth.delete_confirm_title'),
+          text: trans('passkey-auth.delete_confirm_text', { msg: blessing.site_name }),
+          placeholder: name,
+        }).catch(() => {
+          throw new Error('USER_CANCELLED');
+        });
 
-      if (result.value === name) {
-        try {
-          await blessing.fetch.post(`/user/passkey/${id}/delete`);
-          blessing.notify.toast.success(trans('passkey-auth.delete_success'));
-          card.remove();
-        } catch (error) {
-          blessing.notify.toast.error(
-            trans('passkey-auth.delete_failed', { msg: (error as Error).message })
-          );
+        if (result.value !== name) {
+          if (result.value) {
+            blessing.notify.toast.warning(trans('passkey-auth.name_mismatch'));
+          }
+          return;
         }
-      } else if (result.value) {
-        blessing.notify.toast.warning(trans('passkey-auth.name_mismatch'));
+
+        await blessing.fetch.post(`/user/passkey/${id}/delete`);
+        blessing.notify.toast.success(trans('passkey-auth.delete_success'));
+        card.remove();
+
+      } catch (error) {
+        if (error.message === 'USER_CANCELLED') {
+          return;
+        }
+        blessing.notify.toast.error(
+          trans('passkey-auth.delete_failed', { msg: (error as Error).message })
+        );
       }
     });
   });
@@ -208,21 +217,25 @@ document.addEventListener('DOMContentLoaded', async () => {
       const nameElement = card.querySelector<HTMLElement>('.col-8');
       const currentName = nameElement?.textContent?.trim() || '';
 
-      const result = await blessing.notify.showModal({
-        mode: 'prompt',
-        title: trans('passkey-auth.rename_title'),
-        text: trans('passkey-auth.rename_text'),
-        placeholder: currentName,
-      });
+      try {
+        const result = await blessing.notify.showModal({
+          mode: 'prompt',
+          title: trans('passkey-auth.rename_title'),
+          text: trans('passkey-auth.rename_text'),
+          placeholder: currentName,
+        }).catch(() => {
+          throw new Error('USER_CANCELLED');
+        });
 
-      if (result.value) {
-        try {
+        if (result.value) {
           await blessing.fetch.post(`/user/passkey/${id}/rename`, { name: result.value });
           if (nameElement) nameElement.textContent = result.value;
           blessing.notify.toast.success(trans('passkey-auth.rename_success'));
-        } catch (error) {
+        }
+      } catch (error) {
+        if (error.message !== 'USER_CANCELLED') {
           blessing.notify.toast.error(
-            trans('passkey-auth.rename_failed', { msg: (error as Error).message })
+            error instanceof Error ? error.message : trans('passkey-auth.rename_failed')
           );
         }
       }

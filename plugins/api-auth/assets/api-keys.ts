@@ -1,37 +1,4 @@
 /// <reference types="jquery" />
-
-declare interface Window {
-    blessing: {
-        base_url: string;
-        site_name: string;
-        notify: {
-            toast: {
-                success: (message: string) => void;
-                error: (message: string) => void;
-                warning: (message: string) => void;
-                info: (message: string) => void;
-            };
-            showModal: (options: {
-                mode?: 'alert' | 'confirm' | 'prompt';
-                type?: 'success' | 'warning' | 'error' | 'info';
-                title: string;
-                text: string;
-                showCancelButton?: boolean;
-                confirmButtonColor?: string;
-                cancelButtonColor?: string;
-                confirmButtonText?: string;
-                cancelButtonText?: string;
-            }) => Promise<boolean>;
-        };
-        fetch: {
-            get: (url: string) => Promise<Response>;
-            post: (url: string, data?: any) => Promise<Response>;
-            put: (url: string, data?: any) => Promise<Response>;
-            delete: (url: string) => Promise<Response>;
-        };
-    };
-}
-
 interface ApiResponse {
     message: string;
     data?: {
@@ -107,7 +74,7 @@ async function handleDelete(event: Event): Promise<void> {
     if (!id) return;
 
     try {
-        const result = await window.blessing.notify.showModal({
+        const result = await blessing.notify.showModal({
             mode: 'confirm',
             title: '确定要删除这个密钥吗？',
             text: '此操作不可逆',
@@ -123,9 +90,9 @@ async function handleDelete(event: Event): Promise<void> {
         if (result === false) return;
 
         // 确保base_url以斜杠结尾
-        const baseUrl = window.blessing.base_url.endsWith('/')
-            ? window.blessing.base_url
-            : window.blessing.base_url + '/';
+        const baseUrl = blessing.base_url.endsWith('/')
+            ? blessing.base_url
+            : blessing.base_url + '/';
 
         const response = await fetch(`${baseUrl}admin/api-keys/${id}`, {
             method: 'DELETE',
@@ -137,7 +104,7 @@ async function handleDelete(event: Event): Promise<void> {
 
         const data: ApiResponse = await response.json();
         if (data.message) {
-            await window.blessing.notify.showModal({
+            await blessing.notify.showModal({
                 mode: 'alert',
                 type: 'success',
                 title: '成功',
@@ -152,7 +119,7 @@ async function handleDelete(event: Event): Promise<void> {
         }
     } catch (error) {
         console.error('Error:', error);
-        await window.blessing.notify.showModal({
+        await blessing.notify.showModal({
             mode: 'alert',
             type: 'error',
             title: '错误',
@@ -179,7 +146,7 @@ if (generateButton) {
         // 验证过期时间
         const expiresAt = data['expires_at'];
         if (expiresAt && !validateExpiresAt(expiresAt)) {
-            await window.blessing.notify.showModal({
+            await blessing.notify.showModal({
                 mode: 'alert',
                 type: 'error',
                 title: '错误',
@@ -191,9 +158,9 @@ if (generateButton) {
 
 
         // 确保base_url以斜杠结尾
-        const baseUrl = window.blessing.base_url.endsWith('/')
-            ? window.blessing.base_url
-            : window.blessing.base_url + '/';
+        const baseUrl = blessing.base_url.endsWith('/')
+            ? blessing.base_url
+            : blessing.base_url + '/';
 
         try {
             const response = await fetch(baseUrl + 'admin/api-keys/generate', {
@@ -219,7 +186,7 @@ if (generateButton) {
                 }
 
                 // 显示成功消息
-                await window.blessing.notify.showModal({
+                await blessing.notify.showModal({
                     mode: 'alert',
                     type: 'success',
                     title: responseData.message,
@@ -238,7 +205,7 @@ if (generateButton) {
             }
         } catch (error) {
             console.error('Error:', error);
-            await window.blessing.notify.showModal({
+            await blessing.notify.showModal({
                 mode: 'alert',
                 type: 'error',
                 title: '错误',

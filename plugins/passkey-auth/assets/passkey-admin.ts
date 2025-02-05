@@ -59,6 +59,9 @@ document.addEventListener('DOMContentLoaded', () => {
                   title: trans('passkey-auth.admin.rename.title'),
                   text: trans('passkey-auth.admin.rename.empty'),
                   placeholder: currentName
+              }).catch(() => {
+                // Modal 被取消时，抛出一个特定的错误
+                throw new Error('USER_CANCELLED');
               });
 
               const newName = result.value.trim();
@@ -75,6 +78,9 @@ document.addEventListener('DOMContentLoaded', () => {
               updatePasskeyName(id, newName);
               blessing.notify.toast.success(data.message);
           } catch (error) {
+              if (error.message === 'USER_CANCELLED') {
+                return;
+              }
               blessing.notify.toast.error(
                   error instanceof Error ? error.message : trans('passkey-auth.admin.rename.failed')
               );
@@ -85,6 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // 删除按钮事件监听
   document.querySelectorAll<HTMLButtonElement>('.btn-danger').forEach(button => {
       button.addEventListener('click', async () => {
+        try {
           const row = button.closest('tr');
           if (!row) return;
 
@@ -94,19 +101,29 @@ document.addEventListener('DOMContentLoaded', () => {
           const id = nameSpan.getAttribute('data-id');
           if (!id) return;
 
-          const confirmed = confirm(trans('passkey-auth.admin.delete.confirm'));
-          if (!confirmed) return;
+          await blessing.notify.showModal({
+            mode: 'confirm',
+            type: 'danger',
+            title: trans('passkey-auth.delete_confirm_title'),
+            text: trans('passkey-auth.admin.delete.confirm')
+          }).catch(() => {
+              // Modal 被取消时，抛出一个特定的错误
+              throw new Error('USER_CANCELLED');
+          });
 
-          try {
-              const data = await blessing.fetch.post(`/admin/passkeys/${id}/delete`);
-
-              removePasskeyRow(id);
-              blessing.notify.toast.success(data.message);
-          } catch (error) {
-              blessing.notify.toast.error(
-                  error instanceof Error ? error.message : trans('passkey-auth.admin.delete.failed')
-              );
+          const data = await blessing.fetch.post(`/admin/passkeys/${id}/delete`);
+          removePasskeyRow(id);
+          blessing.notify.toast.success(data.message);
+        } catch (error) {
+            // 忽略用户取消的情况
+            if (error.message === 'USER_CANCELLED') {
+              return;
           }
+          // 处理其他错误
+          blessing.notify.toast.error(
+            error instanceof Error ? error.message : trans('passkey-auth.admin.delete.failed')
+          );
+        }
       });
   });
 });
