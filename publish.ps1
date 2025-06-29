@@ -6,6 +6,12 @@ git config --global user.name 'graytoowolf'
 git config --global user.email 'graywolf186@gmail.com'
 
 $token = $env:GH_TOKEN
+$slug = $env:GH_APP_SLUG
+
+$app = Invoke-RestMethod -Uri "https://api.github.com/users/$slug[bot]"
+
+git config --global user.name $app.login
+git config --global user.email "$($app.id)+$($app.login)@users.noreply.github.com"
 
 Set-Location .dist
 git add .
