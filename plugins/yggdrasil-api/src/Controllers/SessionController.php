@@ -142,8 +142,21 @@ class SessionController extends Controller
                 'ip' => $ip
             ]);
             if ($response->status() == 200) {
-                Log::channel('ygg')->info("Returning player [$name]'s profile", [$response]);
-                return $response->json();
+                $data = $response->json();
+
+                $privateKey = openssl_pkey_get_private(option('ygg_private_key'));
+                if ($privateKey) {
+                    foreach ($data['properties'] as &$property) {
+                        if ($property['name'] === 'textures') {
+                            openssl_sign($property['value'], $signature, $privateKey);
+                            $property['signature'] = base64_encode($signature);
+                        }
+                    }
+                    unset($property);
+                }
+
+                Log::channel('ygg')->info("Returning player [$name]'s profile from Mojang", [$data]);
+                return $data;
             }
         }
 
