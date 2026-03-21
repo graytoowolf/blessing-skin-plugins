@@ -11,25 +11,23 @@ use Exception;
 class Configuration
 {
     const DEFAULT_IMAGE = '/th?id=OHR.CardinalfishAnemone_EN-US1278259894_1920x1080.jpg'; // 假设的默认图片路径
-    protected $baseUrl = 'https://www.bing.com';
+    protected $baseUrl = 'https://cn.bing.com';
     protected $endpoint = '/HPImageArchive.aspx?format=js&idx=0&n=1';
     protected $cacheKey = 'latest_bing_image_url'; // 缓存键名
 
     public function api()
     {
-        $imageUrl = Cache::get($this->cacheKey);
-        if ($imageUrl === null) {
-            $imageUrl = $this->fetchImageUrl();
-            if ($imageUrl) {
-                // 计算次日0点0分的时间
-                $nextDayMidnight = Carbon::tomorrow()->startOfDay();
-                // 计算从现在到次日0点0分的秒数
-                $remainingSecondsToday = $nextDayMidnight->diffInSeconds(Carbon::now());
-                Cache::put($this->cacheKey, $imageUrl, $remainingSecondsToday);
-            }
-        }
+        $imageUrl = Cache::remember($this->cacheKey, $this->getCacheTtl(), function () {
+            $url = $this->fetchImageUrl();
+            return $url ?? $this->getDefaultImage();
+        });
 
-        return $this->redirectWithCache($imageUrl);
+        return redirect()->away($imageUrl);
+    }
+
+    protected function getCacheTtl(): int
+    {
+        return (int) Carbon::tomorrow()->startOfDay()->diffInSeconds(Carbon::now());
     }
 
     protected function fetchImageUrl()
@@ -50,26 +48,16 @@ class Configuration
             return $this->filterImageUrl($imageUrl);
         } catch (Exception $e) {
             report($e);
-            return $this->handleException();
+            return $this->baseUrl . self::DEFAULT_IMAGE;
         }
     }
 
     protected function filterImageUrl($imageUrl)
     {
-        return Str::of($imageUrl)->replace('&rf=LaDigue_1920x1080.jpg&pid=hp', '');
-    }
+        // 移除原始参数
+        $cleanUrl = Str::of($imageUrl)->replace('&rf=LaDigue_1920x1080.jpg&pid=hp', '');
+        
 
-    protected function redirectWithCache($url)
-    {
-        return redirect()->away($url)->withHeaders([
-            'Cache-Control' => 'public, max-age=1800',
-            'Expires' => gmdate(DATE_RFC7231, strtotime('+30 minutes'))
-        ]);
-    }
-
-    protected function handleException()
-    {
-        $defaultImageUrl = $this->baseUrl . self::DEFAULT_IMAGE;
-        return $defaultImageUrl;
+        return $cleanUrl;
     }
 }
