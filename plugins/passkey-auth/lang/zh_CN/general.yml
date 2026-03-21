@@ -22,6 +22,9 @@ invalid_challenge: "无效的挑战值，请重试"
 passkey_not_found: "通行密钥不存在"
 login_success: "登录成功"
 operation_failed: "操作失败：':msg'"
+challenge_expired: "挑战已过期，请重试"
+passkey_verify_failed: "通行密钥验证失败"
+user_not_found: "用户不存在"
 
 admin:
   title: "通行密钥管理"

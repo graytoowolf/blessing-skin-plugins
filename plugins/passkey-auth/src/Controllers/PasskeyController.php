@@ -5,6 +5,8 @@ namespace PasskeyAuth\Controllers;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use PasskeyAuth\Models\Passkey;
 use PasskeyAuth\Services\WebAuthnServer;
 use Webauthn\PublicKeyCredentialRpEntity;
@@ -19,12 +21,12 @@ use Illuminate\Support\Facades\Base64;
 use Webauthn\AuthenticatorAssertionResponse;
 use Webauthn\PublicKeyCredential;
 use Webauthn\CollectedClientData;
-use Illuminate\Support\Facades\Log;
 
 class PasskeyController extends Controller
 {
     private PublicKeyCredentialRpEntity $rpEntity;
     private WebAuthnServer $webAuthnServer;
+    private const CHALLENGE_TIMEOUT = 300;
 
     public function __construct(WebAuthnServer $webAuthnServer)
     {
@@ -90,9 +92,14 @@ class PasskeyController extends Controller
             extensions: $extensions
         );
 
-        session(['passkey_creation_options' => $publicKeyCredentialCreationOptions]);
+        $challengeToken = bin2hex(random_bytes(16));
+        $cacheKey = 'passkey_creation_options:' . $challengeToken;
+        Cache::put($cacheKey, [
+            'options' => $publicKeyCredentialCreationOptions,
+            'created_at' => time(),
+            'used' => false,
+        ], self::CHALLENGE_TIMEOUT);
 
-        // 转换为前端需要的格式
         return response()->json([
             'rp' => [
                 'name' => $this->rpEntity->getName(),
@@ -119,15 +126,32 @@ class PasskeyController extends Controller
             ],
             'attestation' => 'none',
             'extensions' => $extensions->jsonSerialize(),
+            'token' => $challengeToken,
         ]);
     }
 
     public function register(Request $request)
     {
-        $creationOptions = session('passkey_creation_options');
-        if (!$creationOptions) {
-            return response()->json(['message' => '无效的挑战'], 400);
+        $token = $request->input('token');
+
+        if (!$token) {
+            return response()->json(['message' => trans('PasskeyAuth::general.invalid_challenge')], 400);
         }
+
+        $cacheKey = 'passkey_creation_options:' . $token;
+        $cacheData = Cache::get($cacheKey);
+
+        if (!$cacheData) {
+            Log::warning('Passkey registration challenge not found or expired', ['token' => $token]);
+            return response()->json(['message' => trans('PasskeyAuth::general.invalid_challenge')], 400);
+        }
+
+        if ($cacheData['used']) {
+            Log::warning('Passkey registration challenge already used', ['token' => $token]);
+            return response()->json(['message' => trans('PasskeyAuth::general.invalid_challenge')], 400);
+        }
+
+        $creationOptions = $cacheData['options'];
 
         try {
             $publicKeyCredentialSource = $this->webAuthnServer->createCredential(
@@ -139,11 +163,19 @@ class PasskeyController extends Controller
             $passkey->user_id = Auth::id();
             $passkey->credential_id = $this->base64_urlsafe_encode($publicKeyCredentialSource->getPublicKeyCredentialId());
             $passkey->public_key = $this->base64_urlsafe_encode($publicKeyCredentialSource->getCredentialPublicKey());
+            $passkey->counter = 0;
             $passkey->name = 'Passkey ' . date('Y-m-d H:i:s');
             $passkey->save();
 
+            Cache::put($cacheKey, array_merge($cacheData, ['used' => true]), 60);
+
             return response()->json(['data' => ['id' => $passkey->id]]);
         } catch (\Exception $e) {
+            Log::error('Passkey registration failed', [
+                'error' => $e->getMessage(),
+                'token' => $token,
+            ]);
+            Cache::forget($cacheKey);
             return response()->json(['message' => $e->getMessage()], 400);
         }
     }
@@ -172,25 +204,30 @@ class PasskeyController extends Controller
     public function getLoginChallenge()
     {
         $challenge = random_bytes(32);
+        $challengeToken = bin2hex(random_bytes(16));
 
         $options = new PublicKeyCredentialRequestOptions(
             $challenge,
-            timeout: 300000,
+            timeout: self::CHALLENGE_TIMEOUT * 1000,
             rpId: parse_url(url('/'), PHP_URL_HOST),
             userVerification: PublicKeyCredentialRequestOptions::USER_VERIFICATION_REQUIREMENT_REQUIRED
         );
 
-        // 使用更持久的存储方式
-        $token = bin2hex(random_bytes(16));
-        cache()->put('passkey_request_options:' . $token, $options, now()->addMinutes(5));
+        $cacheKey = 'passkey_request_options:' . $challengeToken;
+        Cache::put($cacheKey, [
+            'options' => $options,
+            'challenge' => $challenge,
+            'created_at' => time(),
+            'used' => false,
+        ], self::CHALLENGE_TIMEOUT);
 
         return response()->json([
             'challenge' => $this->base64_urlsafe_encode($challenge),
-            'timeout' => 300000,
+            'timeout' => self::CHALLENGE_TIMEOUT * 1000,
             'rpId' => parse_url(url('/'), PHP_URL_HOST),
             'userVerification' => 'required',
             'allowCredentials' => [],
-            'token' => $token
+            'token' => $challengeToken
         ]);
     }
 
@@ -198,49 +235,90 @@ class PasskeyController extends Controller
     {
         $token = $request->input('token');
 
-        $requestOptions = cache()->get('passkey_request_options:' . $token);
-        if (!$requestOptions) {
-            Log::error('Invalid challenge:', [
-                'token' => $token
-            ]);
-            return response()->json(['message' => '无效的挑战'], 400);
+        if (!$token) {
+            Log::warning('Login attempt without token');
+            return response()->json(['message' => trans('PasskeyAuth::general.invalid_challenge')], 400);
         }
+
+        $cacheKey = 'passkey_request_options:' . $token;
+        $cacheData = cache()->get($cacheKey);
+
+        if (!$cacheData) {
+            Log::warning('Login challenge not found or expired', ['token' => $token]);
+            return response()->json(['message' => trans('PasskeyAuth::general.invalid_challenge')], 400);
+        }
+
+        if ($cacheData['used']) {
+            Log::warning('Login challenge already used (replay attack)', ['token' => $token]);
+            return response()->json(['message' => trans('PasskeyAuth::general.invalid_challenge')], 400);
+        }
+
+        $elapsed = time() - $cacheData['created_at'];
+        if ($elapsed > self::CHALLENGE_TIMEOUT) {
+            Log::warning('Login challenge expired', [
+                'token' => $token,
+                'elapsed_seconds' => $elapsed,
+            ]);
+            cache()->forget($cacheKey);
+            return response()->json(['message' => trans('PasskeyAuth::general.challenge_expired')], 400);
+        }
+
+        $requestOptions = $cacheData['options'];
+        $origin = url('/');
 
         try {
             $publicKeyCredentialSource = $this->webAuthnServer->verifyAssertion(
                 $requestOptions,
                 $request->input('credentials'),
-                'https://' . parse_url(url('/'), PHP_URL_HOST)
+                $origin
             );
         } catch (\Exception $e) {
-            // 记录日志但不作为错误处理
-            Log::info('WebAuthn login attempt failed:', [
+            Log::info('WebAuthn login assertion failed', [
                 'error' => $e->getMessage(),
-                'credentials' => $request->input('credentials')
+                'token' => $token,
             ]);
-            return response()->json(['message' => '无效的凭证ID，请确保使用正确的通行密钥'], 400);
+            cache()->forget($cacheKey);
+            return response()->json(['message' => trans('PasskeyAuth::general.passkey_verify_failed')], 400);
         }
 
-        $passkey = Passkey::where('credential_id', $this->base64_urlsafe_encode($publicKeyCredentialSource->getPublicKeyCredentialId()))->first();
+        $credentialId = $this->base64_urlsafe_encode($publicKeyCredentialSource->getPublicKeyCredentialId());
+        $passkey = Passkey::where('credential_id', $credentialId)->first();
+
         if (!$passkey) {
-            return response()->json(['message' => '未找到对应的密钥'], 400);
+            Log::error('Passkey not found after assertion', [
+                'credential_id' => $credentialId,
+            ]);
+            cache()->forget($cacheKey);
+            return response()->json(['message' => trans('PasskeyAuth::general.passkey_not_found')], 400);
         }
 
         $user = $passkey->user;
         if (!$user) {
-            return response()->json(['message' => '未找到对应的用户'], 400);
+            Log::error('Passkey user association broken', [
+                'passkey_id' => $passkey->id,
+            ]);
+            cache()->forget($cacheKey);
+            return response()->json(['message' => trans('PasskeyAuth::general.user_not_found')], 400);
         }
 
-        Log::debug('Login user:', [
+        $counter = $publicKeyCredentialSource->getCounter();
+        if ($counter > 0) {
+            $passkey->counter = $counter;
+            $passkey->save();
+        }
+
+        Cache::put($cacheKey, array_merge($cacheData, ['used' => true]), 60);
+
+        Log::info('Passkey login successful', [
+            'user_id' => $user->uid,
             'email' => $user->email,
-            'id' => $user->uid
         ]);
 
         Auth::login($user);
 
         return response()->json([
             'code' => 0,
-            'message' => '登录成功',
+            'message' => trans('PasskeyAuth::general.login_success'),
             'data' => [
                 'redirect' => '/user'
             ]

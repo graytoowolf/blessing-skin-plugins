@@ -21,6 +21,9 @@ invalid_challenge: "Invalid challenge, please try again"
 passkey_not_found: "Passkey not found"
 login_success: "Login successful"
 operation_failed: "Operation failed: ':msg'"
+challenge_expired: "Challenge expired, please try again"
+passkey_verify_failed: "Passkey verification failed"
+user_not_found: "User not found"
 
 admin:
   title: "Passkey Management"

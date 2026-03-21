@@ -3,6 +3,15 @@ interface PublicKeyCredentialWithExtensions extends PublicKeyCredential {
   getClientExtensionResults: () => AuthenticationExtensionsClientOutputs;
 }
 
+interface ChallengeResponse {
+  challenge: string;
+  rpId: string;
+  timeout: number;
+  userVerification: string;
+  token: string;
+  allowCredentials?: Array<{ id: string; type: string }>;
+}
+
 // Base64URL 编解码工具
 const base64urlEncode = (buffer: ArrayBuffer): string => {
   return btoa(String.fromCharCode(...new Uint8Array(buffer)))
@@ -34,8 +43,27 @@ const handleError = (error: unknown, defaultTransKey: string): void => {
   }
 };
 
+// WebAuthn 支持检测
+const isWebAuthnSupported = (): boolean => {
+  return typeof window !== 'undefined' && window.PublicKeyCredential !== undefined;
+};
+
 // DOM 加载完成事件
 document.addEventListener('DOMContentLoaded', async () => {
+  if (!isWebAuthnSupported()) {
+    const loginButton = document.querySelector<HTMLButtonElement>('.btn#passkey-login');
+    const registerButton = document.querySelector<HTMLButtonElement>('.btn#passkey-register');
+    if (loginButton) {
+      loginButton.disabled = true;
+      loginButton.title = 'Browser does not support WebAuthn';
+    }
+    if (registerButton) {
+      registerButton.disabled = true;
+      registerButton.title = 'Browser does not support WebAuthn';
+    }
+    return;
+  }
+
   // 注册 Passkey
   const registerButton = document.querySelector<HTMLButtonElement>('.btn#passkey-register');
   if (registerButton) {
@@ -44,24 +72,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         registerButton.disabled = true;
         blessing.notify.toast.success(trans('passkey-auth.verifying'));
 
-        const data = await blessing.fetch.get<any>('/user/passkey/register');
+        const data = await blessing.fetch.get<ChallengeResponse>('/user/passkey/register');
         const credential = (await navigator.credentials.create({
           publicKey: {
-            ...data,
+            rp: data.rp,
             user: {
-              ...data.user,
               id: base64urlDecode(data.user.id),
+              name: data.user.name,
+              displayName: data.user.displayName,
             },
             challenge: base64urlDecode(data.challenge),
-            excludeCredentials: data.excludeCredentials?.map((cred: any) => ({
-              ...cred,
-              id: base64urlDecode(cred.id),
-            })),
-            rp: data.rp,
             pubKeyCredParams: data.pubKeyCredParams,
-            authenticatorSelection: data.authenticatorSelection,
             timeout: data.timeout,
+            excludeCredentials: [],
+            authenticatorSelection: data.authenticatorSelection,
             attestation: data.attestation,
+            extensions: data.extensions,
           },
         })) as PublicKeyCredentialWithExtensions;
 
@@ -78,7 +104,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           clientExtensionResults: credential.getClientExtensionResults(),
         };
 
-        const result = await blessing.fetch.post<{ data?: { id: string } }>('/user/passkey/register', response);
+        const result = await blessing.fetch.post<{ data?: { id: string } }>('/user/passkey/register', {
+          ...response,
+          token: data.token,
+        });
         if (!result.data?.id) throw new Error('Invalid server response');
 
         const nameModal = await blessing.notify.showModal({
@@ -109,18 +138,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         loginButton.disabled = true;
         blessing.notify.toast.info(trans('passkey-auth.verifying'));
 
-        const data = await blessing.fetch.get<any>('/auth/login/passkey/challenge');
+        const data = await blessing.fetch.get<ChallengeResponse>('/auth/login/passkey/challenge');
         const credential = (await navigator.credentials.get({
           publicKey: {
-            ...data,
             challenge: base64urlDecode(data.challenge),
-            allowCredentials: data.allowCredentials?.map((cred: any) => ({
-              ...cred,
-              id: base64urlDecode(cred.id),
-            })),
             rpId: data.rpId,
             timeout: data.timeout,
             userVerification: data.userVerification,
+            allowCredentials: [],
           },
         })) as PublicKeyCredentialWithExtensions;
 
@@ -139,7 +164,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           clientExtensionResults: credential.getClientExtensionResults(),
         };
 
-        const result = await blessing.fetch.post<{ code: number; data?: { redirect?: string } }>(
+        const result = await blessing.fetch.post<{ code: number; data?: { redirect?: string }; message?: string }>(
           '/auth/login/passkey',
           {
             type: 'passkey',
@@ -154,7 +179,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             window.location.href = result.data?.redirect || '/user';
           }, 1000);
         } else {
-          blessing.notify.toast.error(result['message'] || trans('passkey-auth.no_local_passkey'));
+          blessing.notify.toast.error(result.message || trans('passkey-auth.no_local_passkey'));
         }
       } catch (error) {
         handleError(error, 'passkey-auth.operation_failed');

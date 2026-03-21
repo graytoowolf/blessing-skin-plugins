@@ -6,10 +6,13 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use PasskeyAuth\Models\Passkey;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 use Exception;
 
 class AuthController extends Controller
 {
+    private const CHALLENGE_TIMEOUT = 300;
+
     public function __construct()
     {
         $this->middleware('guest')->only(['verify', 'getLoginChallenge']);
@@ -18,32 +21,42 @@ class AuthController extends Controller
     public function getLoginChallenge()
     {
         $challenge = random_bytes(32);
-        session(['passkey_login_challenge' => $challenge]);
+        $challengeToken = bin2hex(random_bytes(16));
+
+        $cacheKey = 'passkey_challenge:' . $challengeToken;
+        Cache::put($cacheKey, [
+            'challenge' => $challenge,
+            'created_at' => time(),
+            'used' => false,
+        ], self::CHALLENGE_TIMEOUT);
 
         return response()->json([
             'challenge' => base64_encode($challenge),
             'rpId' => parse_url(url('/'), PHP_URL_HOST),
-            'timeout' => 60000,
-            'userVerification' => 'preferred'
+            'timeout' => self::CHALLENGE_TIMEOUT * 1000,
+            'userVerification' => 'required',
+            'token' => $challengeToken,
         ]);
     }
 
     protected function base64url_decode($data)
     {
-        return base64_decode(strtr($data, '-_', '+/') . str_repeat('=', 3 - (3 + strlen($data)) % 4));
+        $remainder = strlen($data) % 4;
+        if ($remainder) {
+            $data .= str_repeat('=', 4 - $remainder);
+        }
+        return base64_decode(strtr($data, '-_', '+/'));
     }
 
     protected function verifySignature($publicKey, $authenticatorData, $clientDataHash, $signature)
     {
         try {
-            // 从 PEM 格式的公钥中提取原始密钥数据
             $pem = "-----BEGIN PUBLIC KEY-----\n" . chunk_split(base64_encode($publicKey), 64, "\n") . "-----END PUBLIC KEY-----";
             $key = openssl_pkey_get_public($pem);
             if (!$key) {
                 throw new Exception("Invalid public key");
             }
 
-            // 验证签名
             $dataToVerify = $authenticatorData . $clientDataHash;
             $result = openssl_verify(
                 $dataToVerify,
@@ -70,9 +83,63 @@ class AuthController extends Controller
         }
     }
 
+    protected function validateOrigin($clientDataOrigin): bool
+    {
+        $siteUrl = url('/');
+        $parsedUrl = parse_url($siteUrl);
+
+        $expectedHost = $parsedUrl[PHP_URL_HOST] ?? '';
+        $expectedScheme = $parsedUrl[PHP_URL_SCHEME] ?? 'https';
+
+        $parsedOrigin = parse_url($clientDataOrigin);
+
+        if (!$parsedOrigin) {
+            Log::warning('Invalid origin format', ['origin' => $clientDataOrigin]);
+            return false;
+        }
+
+        $originHost = $parsedOrigin[PHP_URL_HOST] ?? '';
+        $originScheme = $parsedOrigin[PHP_URL_SCHEME] ?? '';
+
+        if ($originHost !== $expectedHost) {
+            Log::warning('Origin host mismatch', [
+                'expected' => $expectedHost,
+                'actual' => $originHost,
+            ]);
+            return false;
+        }
+
+        if ($originScheme !== $expectedScheme) {
+            Log::warning('Origin scheme mismatch', [
+                'expected' => $expectedScheme,
+                'actual' => $originScheme,
+            ]);
+            return false;
+        }
+
+        return true;
+    }
+
+    protected function validateRpIdHash($authenticatorData, $rpId): bool
+    {
+        $rpIdHash = substr($authenticatorData, 0, 32);
+        $expectedRpIdHash = hash('sha256', $rpId, true);
+
+        if ($rpIdHash !== $expectedRpIdHash) {
+            Log::warning('RP ID hash mismatch', [
+                'expected' => bin2hex($expectedRpIdHash),
+                'actual' => bin2hex($rpIdHash),
+            ]);
+            return false;
+        }
+
+        return true;
+    }
+
     public function verify(Request $request)
     {
         $credentials = $request->input('credentials');
+        $token = $request->input('token');
 
         if (!$credentials || !isset($credentials['id'])) {
             return response()->json([
@@ -81,19 +148,49 @@ class AuthController extends Controller
             ]);
         }
 
-        // 验证 challenge
-        $challenge = session('passkey_login_challenge');
-        if (!$challenge) {
+        if (!$token) {
             return response()->json([
                 'code' => 1,
                 'message' => trans('PasskeyAuth::general.invalid_challenge')
             ]);
         }
-        session()->forget('passkey_login_challenge');
 
-        // 查找对应的 Passkey 记录
+        $cacheKey = 'passkey_challenge:' . $token;
+        $challengeData = Cache::get($cacheKey);
+
+        if (!$challengeData) {
+            Log::warning('Challenge not found or expired', ['token' => $token]);
+            return response()->json([
+                'code' => 1,
+                'message' => trans('PasskeyAuth::general.invalid_challenge')
+            ]);
+        }
+
+        if ($challengeData['used']) {
+            Log::warning('Challenge already used (replay attack)', ['token' => $token]);
+            return response()->json([
+                'code' => 1,
+                'message' => trans('PasskeyAuth::general.invalid_challenge')
+            ]);
+        }
+
+        $challenge = $challengeData['challenge'];
+
+        $elapsed = time() - $challengeData['created_at'];
+        if ($elapsed > self::CHALLENGE_TIMEOUT) {
+            Log::warning('Challenge expired', [
+                'token' => $token,
+                'elapsed_seconds' => $elapsed,
+            ]);
+            Cache::forget($cacheKey);
+            return response()->json([
+                'code' => 1,
+                'message' => trans('PasskeyAuth::general.challenge_expired')
+            ]);
+        }
+
         $passkey = Passkey::where('credential_id', $credentials['id'])
-            ->with('user')  // 预加载用户关系
+            ->with('user')
             ->first();
 
         if (!$passkey) {
@@ -106,7 +203,6 @@ class AuthController extends Controller
             ]);
         }
 
-        // 检查用户关联
         $user = $passkey->user;
         if (!$user) {
             Log::error('Passkey found but user is null', [
@@ -121,45 +217,39 @@ class AuthController extends Controller
         }
 
         try {
-            // 解码客户端数据
             $clientDataJSON = $this->base64url_decode($credentials['response']['clientDataJSON']);
             $clientData = json_decode($clientDataJSON);
 
-            // 验证 challenge 匹配
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new Exception('Invalid clientDataJSON');
+            }
+
             $expectedChallenge = base64_encode($challenge);
             if ($clientData->challenge !== $expectedChallenge) {
                 throw new Exception('Challenge mismatch');
             }
 
-            // 验证 origin
-            $expectedOrigin = url('/');
-            if ($clientData->origin !== $expectedOrigin) {
-                throw new Exception('Origin mismatch');
+            if (!$this->validateOrigin($clientData->origin)) {
+                throw new Exception('Origin validation failed');
             }
 
-            // 验证 type
             if ($clientData->type !== 'webauthn.get') {
                 throw new Exception('Invalid type');
             }
 
-            // 解码认证器数据和签名
             $authenticatorData = $this->base64url_decode($credentials['response']['authenticatorData']);
             $signature = $this->base64url_decode($credentials['response']['signature']);
             $clientDataHash = hash('sha256', $clientDataJSON, true);
 
-            // 验证签名
             if (!$this->verifySignature($passkey->public_key, $authenticatorData, $clientDataHash, $signature)) {
                 throw new Exception('Signature verification failed');
             }
 
-            // 验证 RP ID hash（authenticatorData 的前32字节）
-            $rpIdHash = substr($authenticatorData, 0, 32);
-            $expectedRpIdHash = hash('sha256', parse_url(url('/'), PHP_URL_HOST), true);
-            if ($rpIdHash !== $expectedRpIdHash) {
+            $rpId = parse_url(url('/'), PHP_URL_HOST);
+            if (!$this->validateRpIdHash($authenticatorData, $rpId)) {
                 throw new Exception('Invalid RP ID hash');
             }
 
-            // 验证用户在场标志（flags）
             $flags = ord($authenticatorData[32]);
             $userPresent = ($flags & 0x01) !== 0;
             $userVerified = ($flags & 0x04) !== 0;
@@ -168,18 +258,27 @@ class AuthController extends Controller
                 throw new Exception('User presence check failed');
             }
 
-            // 更新计数器
+            if (!$userVerified) {
+                throw new Exception('User verification required but not performed');
+            }
+
             $counter = unpack('N', substr($authenticatorData, 33, 4))[1];
             if ($counter <= $passkey->counter) {
-                throw new Exception('Counter value decreased');
+                Log::error('Counter rollback detected', [
+                    'credential_id' => $credentials['id'],
+                    'stored_counter' => $passkey->counter,
+                    'received_counter' => $counter,
+                ]);
+                throw new Exception('Counter value decreased - possible cloned authenticator');
             }
+
+            Cache::put($cacheKey, array_merge($challengeData, ['used' => true]), 60);
+
             $passkey->counter = $counter;
             $passkey->save();
 
-            // 登录用户
             auth()->login($user);
 
-            // 返回用户信息
             return response()->json([
                 'code' => 0,
                 'message' => trans('PasskeyAuth::general.login_success'),
@@ -195,6 +294,8 @@ class AuthController extends Controller
                 'trace' => $e->getTraceAsString(),
                 'credential_id' => $credentials['id']
             ]);
+
+            Cache::forget($cacheKey);
 
             return response()->json([
                 'code' => 1,
